@@ -1,6 +1,6 @@
 **CAUTION**
 
-- cd ketodiet\_\*\_project
+- cd ketodiet_end_project
 
 **Frontend Server**
 
