@@ -48,7 +48,7 @@ class _TestGroundState extends State<TestGround> {
               );
               var response = await http.get(myUri);
 
-              print(response);
+              print(response.body);
             },
             style: ButtonStyle(
               fixedSize: MaterialStateProperty.all(const Size.fromHeight(50.0)),
