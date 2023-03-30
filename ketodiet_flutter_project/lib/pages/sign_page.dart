@@ -17,6 +17,7 @@ class _SignInButtonState extends State<SignInButton> {
   Widget build(BuildContext context) {
     return TextButton(
         onPressed: () async {
+          Navigator.pushNamed(context, '/test');
           if (await isKakaoTalkInstalled()) {
             try {
               OAuthToken token = await UserApi.instance.loginWithKakaoTalk();
@@ -28,10 +29,13 @@ class _SignInButtonState extends State<SignInButton> {
             try {
               OAuthToken token = await UserApi.instance.loginWithKakaoAccount();
               print('카카오계정으로 로그인 성공 ${token.accessToken}');
+              await http.get(Uri.http(
+                  '127.0.0.1:8001', '/api/logincheck', token.toJson()));
             } catch (error) {
               print('카카오계정으로 로그인 실패 $error');
             }
           }
+          Navigator.pop(context);
         },
         style: ButtonStyle(
           overlayColor: MaterialStateProperty.all(Colors.transparent),
