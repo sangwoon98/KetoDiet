@@ -1,7 +1,8 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 import requests
-import jwt
+import base64
+import json
 
 @api_view(['GET'])
 def loginCheck(request):
@@ -17,8 +18,7 @@ def loginCheck(request):
     print('refresh_token_expires_at: ',refresh_token_expires_at)
     print('scopes: ',scopes)
     print('id_token: ',id_token) 
-    import base64
-    import json
+ 
 
     # id_token을 .으로 구분하여 헤더, 페이로드, 서명으로 분리합니다.
     header_b64, payload_b64, signature_b64 = id_token.split('.')
@@ -30,7 +30,7 @@ def loginCheck(request):
     # 결과를 출력합니다.
     print('Header:', header)
     print('Payload:', payload)
-    print('Signature:', base64.b64decode(signature_b64))
+    print('Signature:', signature_b64)
 
     
     if access_token:
