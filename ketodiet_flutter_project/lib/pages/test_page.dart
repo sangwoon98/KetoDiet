@@ -37,6 +37,7 @@ class _TestPageState extends State<TestPage> {
               testModule(signInButton(context)),
               testModule(signOutButton()),
               testModule(apiTestField()),
+              testModule(accountButtons()),
             ],
           ),
         ),
@@ -160,4 +161,8 @@ Widget apiTestField() {
       ],
     ),
   );
+}
+
+Widget accountButtons() {
+  return Row();
 }

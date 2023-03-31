@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+
+import 'account.dart';
 
 AppBar appBar(context) {
   return AppBar(
@@ -8,12 +11,14 @@ AppBar appBar(context) {
       // mainAxisAlignment: MainAxisAlignment.center,
       children: [
         homeButton(context),
-        pageButton(context, '/test', 'TestPage'),
-        pageButton(context, '/test', 'TestPage'),
-        pageButton(context, '/test', 'TestPage'),
-        pageButton(context, '/test', 'TestPage'),
+        pageButton(context, '/about-us', '우리는 누구인가요?'),
+        pageButton(context, '/info', '키토제닉이란?'),
+        pageButton(context, '/community', '커뮤니티'),
+        pageButton(context, '/challenge', '키토 챌린지'),
+        pageButton(context, '/test', '개발자 도구'),
       ],
     ),
+    actions: const [],
   );
 }
 
