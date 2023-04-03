@@ -45,3 +45,5 @@ app.*.map.json
 
 # Custom
 *.env
+secret.dart
+secret_encoder.dart
