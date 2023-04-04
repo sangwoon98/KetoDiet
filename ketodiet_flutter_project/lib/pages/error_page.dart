@@ -19,7 +19,7 @@ class _ErrorPageState extends State<ErrorPage> {
 
     if (errorArgs == null) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        Navigator.popAndPushNamed(context, '/');
+        Navigator.pushReplacementNamed(context, '/');
       });
     } else {
       // ignore: avoid_print

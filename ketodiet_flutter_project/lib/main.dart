@@ -13,16 +13,28 @@ import 'pages/setting_page.dart';
 import 'pages/sign_page.dart';
 import 'pages/test_page.dart';
 
+// final routes = {
+//   '/': (BuildContext context) => const MainPage(),
+//   '/about-us': (BuildContext context) => const AboutUsPage(),
+//   '/info': (BuildContext context) => const InfoPage(),
+//   '/community': (BuildContext context) => const CommunityPage(),
+//   '/challenge': (BuildContext context) => const ChallengePage(),
+//   '/setting': (BuildContext context) => const SettingPage(),
+//   '/sign': (BuildContext context) => const SignPage(),
+//   '/error': (BuildContext context) => const ErrorPage(),
+//   '/test': (BuildContext context) => const TestPage(),
+// };
+
 final routes = {
-  '/': (BuildContext context) => const MainPage(),
-  '/about-us': (BuildContext context) => const AboutUsPage(),
-  '/info': (BuildContext context) => const InfoPage(),
-  '/community': (BuildContext context) => const CommunityPage(),
-  '/challenge': (BuildContext context) => const ChallengePage(),
-  '/setting': (BuildContext context) => const SettingPage(),
-  '/sign': (BuildContext context) => const SignPage(),
-  '/error': (BuildContext context) => const ErrorPage(),
-  '/test': (BuildContext context) => const TestPage(),
+  '/': const MainPage(),
+  '/about-us': const AboutUsPage(),
+  '/info': const InfoPage(),
+  '/community': const CommunityPage(),
+  '/challenge': const ChallengePage(),
+  '/setting': const SettingPage(),
+  '/sign': const SignPage(),
+  '/error': const ErrorPage(),
+  '/test': const TestPage(),
 };
 
 void main() async {
@@ -43,11 +55,23 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      onGenerateRoute: (settings) {
+        if (routes.containsKey(settings.name)) {
+          return PageRouteBuilder(
+              settings: RouteSettings(
+                name: settings.name,
+                arguments: settings.arguments,
+              ),
+              pageBuilder: (_, __, ___) => routes[settings.name]!);
+        }
+
+        return null;
+      },
       title: 'KetoDiet',
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
-      routes: routes,
+      debugShowCheckedModeBanner: false,
     );
   }
 }

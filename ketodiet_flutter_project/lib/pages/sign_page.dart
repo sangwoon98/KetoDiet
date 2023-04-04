@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 
 import '../secret.dart';
+import '../modules/account.dart';
 import '../modules/handle.dart';
 
 class SignPage extends StatefulWidget {
@@ -18,25 +21,29 @@ class _SignPageState extends State<SignPage> {
     SignArgs? signArgs =
         ModalRoute.of(context)?.settings.arguments as SignArgs?;
 
-    return FutureBuilder(
-      future: signFuture(context, signArgs),
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          if (snapshot.data!) {
-            WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-              Navigator.pop(context);
-            });
+    return Scaffold(
+      body: FutureBuilder(
+        future: signPageFuture(context, signArgs),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            if (snapshot.data == 'register') {
+              return registerWidget();
+            } else if (snapshot.data == true) {
+              WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                Navigator.pop(context);
+              });
+            }
           }
-        }
-        return const Scaffold();
-        // TODO: [로그인 처리 중] 안내 페이지 제작
-        // 클릭 시 MainPage로 가는 버튼 제작
-      },
+
+          return const SizedBox();
+          // TODO: Sign Processing 창 만들기
+        },
+      ),
     );
   }
 }
 
-Future<bool> signFuture(context, SignArgs? signArgs) async {
+Future<dynamic> signPageFuture(context, SignArgs? signArgs) async {
   if (signArgs == null) {
     return true;
   } else if (signArgs.signType == 'signIn') {
@@ -44,11 +51,9 @@ Future<bool> signFuture(context, SignArgs? signArgs) async {
   } else if (signArgs.signType == 'signOut') {
     return await signOut(context);
   }
-
-  return true;
 }
 
-Future<bool> signIn(context) async {
+Future<dynamic> signIn(context) async {
   late OAuthToken token;
   Object? error;
 
@@ -77,25 +82,30 @@ Future<bool> signIn(context) async {
         },
       );
 
-      // TODO: StatusCode에 따라서 회원가입 창으로 넘어가게 하기
-
-      return true;
+      if (response.statusCode == 200) {
+        return true;
+      } else if (response.statusCode == 404) {
+        return 'register';
+      } else {
+        throw 'Response Status Code Error.\nStatusCode: ${response.statusCode}';
+      }
     } catch (e) {
       error = e;
     }
   }
 
-  await handleError(context, error, 'sign_page.dart', 'signOut');
+  await handleError(context, error, 'sign_page.dart', 'signIn');
   return false;
 }
 
 Future<bool> signOut(context) async {
-  try {
-    await UserApi.instance.logout();
-  } catch (error) {
-    await handleError(context, error, 'sign_page.dart', 'signOut');
-    return false;
-  }
-
+  dropToken(context);
   return true;
+}
+
+Widget registerWidget() {
+  // TODO: 회원가입 창
+  return Container(
+    color: Colors.green,
+  );
 }

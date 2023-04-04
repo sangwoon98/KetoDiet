@@ -10,7 +10,7 @@ class ErrorArgs {
 }
 
 Future handleError(context, error, file, method) async {
-  await Navigator.popAndPushNamed(
+  await Navigator.pushReplacementNamed(
     context,
     '/error',
     arguments: ErrorArgs(

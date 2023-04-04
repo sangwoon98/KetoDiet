@@ -32,7 +32,7 @@ Widget homeButton(context) {
       height: AppBar().preferredSize.height,
       child: TextButton(
         onPressed: () {
-          Navigator.popAndPushNamed(context, '/');
+          Navigator.pushReplacementNamed(context, '/');
         },
         style: TextButton.styleFrom(
           padding: EdgeInsets.zero,
@@ -71,7 +71,7 @@ Widget pageButton(context, String path, String displayedName) {
       height: AppBar().preferredSize.height,
       child: TextButton(
         onPressed: () {
-          Navigator.popAndPushNamed(context, path);
+          Navigator.pushReplacementNamed(context, path);
         },
         style: TextButton.styleFrom(
           padding: EdgeInsets.zero,
