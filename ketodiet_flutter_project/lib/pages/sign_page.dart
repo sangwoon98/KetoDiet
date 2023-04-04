@@ -69,7 +69,7 @@ Future<bool> signIn(context) async {
   if (error == null) {
     try {
       http.Response response = await http.get(
-        Uri.http(backendDomain, '/api/account', token.toJson()),
+        Uri.http(backendDomain, '/api/account'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
