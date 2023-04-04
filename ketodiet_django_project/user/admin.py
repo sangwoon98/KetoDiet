@@ -1,5 +1,5 @@
 from django.contrib import admin
-from ketodiet_django_app.models import UserDB
+from user.models import UserDB
 
 @admin.register(UserDB)
 class UserDB(admin.ModelAdmin):
