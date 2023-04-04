@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -27,7 +28,7 @@ class _SignPageState extends State<SignPage> {
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             if (snapshot.data == 'register') {
-              return registerWidget();
+              return registerWidget(context);
             } else if (snapshot.data == true) {
               WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                 Navigator.pop(context);
@@ -103,9 +104,67 @@ Future<bool> signOut(context) async {
   return true;
 }
 
-Widget registerWidget() {
+Widget registerWidget(context) {
+  TextEditingController controller = TextEditingController();
+
   // TODO: 회원가입 창
-  return Container(
-    color: Colors.green,
+  return Center(
+    child: SizedBox(
+      width: 300.0,
+      height: 300.0,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('좋은 말로 할때 닉네임 입력하쇼.\n이건 내 마지막 경고요.'),
+          TextField(
+            controller: controller,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () async {
+                  await dropToken(context);
+                  WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                    Navigator.pop(context);
+                  });
+                },
+                child: const Text('취소'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  OAuthToken? token = await getToken(context);
+                  http.Response response = await http.post(
+                    Uri.http(backendDomain, '/api/account'),
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Accept': 'application/json',
+                      'Authorization': '${token!.toJson()}',
+                    },
+                    body: jsonEncode({
+                      'name': controller.text,
+                    }),
+                  );
+
+                  if (response.statusCode == 200) {
+                    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                      Navigator.pop(context);
+                    });
+                  } else {
+                    handleError(
+                      context,
+                      'Response Status Code Error.\nStatusCode: ${response.statusCode}',
+                      'sign_page.dart',
+                      'registerWidget',
+                    );
+                  }
+                },
+                child: const Text('확인'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
   );
 }

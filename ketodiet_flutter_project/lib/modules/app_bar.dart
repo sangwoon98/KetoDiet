@@ -32,7 +32,9 @@ Widget homeButton(context) {
       height: AppBar().preferredSize.height,
       child: TextButton(
         onPressed: () {
-          Navigator.pushReplacementNamed(context, '/');
+          WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+            Navigator.pushReplacementNamed(context, '/');
+          });
         },
         style: TextButton.styleFrom(
           padding: EdgeInsets.zero,
@@ -71,7 +73,9 @@ Widget pageButton(context, String path, String displayedName) {
       height: AppBar().preferredSize.height,
       child: TextButton(
         onPressed: () {
-          Navigator.pushReplacementNamed(context, path);
+          WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+            Navigator.pushReplacementNamed(context, path);
+          });
         },
         style: TextButton.styleFrom(
           padding: EdgeInsets.zero,
@@ -98,7 +102,7 @@ Widget signInButton(context) {
     onPressed: () async {
       await Navigator.pushNamed(context, '/sign',
           arguments: SignArgs('signIn'));
-      _signStreamController.add(await getSignStatus(context));
+      updateSignStatus(context);
     },
     child: const Text(
       'Sign In',
@@ -113,7 +117,7 @@ Widget signOutButton(context) {
     onPressed: () async {
       await Navigator.pushNamed(context, '/sign',
           arguments: SignArgs('signOut'));
-      _signStreamController.add(await getSignStatus(context));
+      updateSignStatus(context);
     },
     child: const Text(
       'Sign Out',
@@ -129,23 +133,27 @@ Widget signButtons(context) {
     stream: _signStreamController.stream,
     builder: (BuildContext context, AsyncSnapshot snapshot) {
       if (snapshot.hasData) {
-        if (snapshot.data) {
+        if (snapshot.data == true) {
           return Row(
             children: [
               // TODO: 설정 버튼 제작
               signOutButton(context),
             ],
           );
-        } else {
+        } else if (snapshot.data == false) {
           return signInButton(context);
         }
-      } else {
-        return const SizedBox();
       }
+
+      return const SizedBox();
     },
   );
 }
 
 void updateSignStatus(context) async {
-  _signStreamController.add(await getSignStatus(context));
+  try {
+    _signStreamController.add(await getSignStatus(context));
+  } catch (e) {
+    handleError(context, e, 'app_bar.dart', 'updateSignStatus');
+  }
 }
