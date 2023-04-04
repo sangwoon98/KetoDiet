@@ -10,16 +10,18 @@ class ErrorArgs {
 }
 
 Future handleError(context, error, file, method) async {
-  await Navigator.popAndPushNamed(
-    context,
-    '/error',
-    arguments: ErrorArgs(
-      '$error',
-      '${ModalRoute.of(context)?.settings.name}',
-      '$file',
-      '$method',
-    ),
-  );
+  WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+    await Navigator.pushReplacementNamed(
+      context,
+      '/error',
+      arguments: ErrorArgs(
+        '$error',
+        '${ModalRoute.of(context)?.settings.name}',
+        '$file',
+        '$method',
+      ),
+    );
+  });
 }
 
 class SignArgs {
