@@ -6,7 +6,7 @@ class UserDB(models.Model):
     
     
     def __str__(self):
-        return self.id
+        return self.name
     
     
     

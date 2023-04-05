@@ -28,28 +28,48 @@ class AccountView(APIView):
             response.raise_for_status() # status code = 200 이상 일때 requests.exceptions.HTTPError 예외 발생
             return response.json()
         except requests.exceptions.HTTPError as error:
-            raise ValueError(f'Failed to get access token info from Kakao API: {error}') # raise = 함수를 중단하고 return
-
-    def get(self, request):
+            raise ValueError(f'Failed to get access token info from Kakao API: {error}')
+    
+    def access_token_to_id(self, request):
         access_token = request.headers.get('Authorization', '').split()[1]
         try:
             data = self.access_token_validation(access_token)
             id = data['id']
+            return id
         except (ValueError, KeyError):
             return Response({'error': 'Failed to get access token info from Kakao API.'}, status=status.HTTP_401_UNAUTHORIZED)
 
+        
+    def get(self, request):
+        id = self.access_token_to_id(request) # 유효성 검증 후 access_token의 id 를 가져옴.
         qs = UserDB.objects.filter(id=id).first()
-
         if qs:
             return Response(status=status.HTTP_200_OK)
         else:
             return Response({'message': 'signup'}, status=status.HTTP_404_NOT_FOUND)
         
+        
     def post(self, request):
-        data = json.loads(request.body)
-        name = data.get('name')
-        UserDB.objects.create(name=name)
-        return Response(status = status.HTTP_200_OK)
+        id = self.access_token_to_id(request) # 유효성 검증 후 access_token의 id 를 가져옴.
+        body_json = json.loads(request.body)
+        name = body_json.get('name')
+        try:
+            UserDB.objects.create(id=id,name=name)
+        except:
+            return Response(status = status.HTTP_400_BAD_REQUEST)
+        
+        return Response(status = status.HTTP_201_CREATED)
+    
+    def delete(self, request):
+        id = self.access_token_to_id(request) # 유효성 검증 후 access_token의 id 를 가져옴.
+        try:
+            user=UserDB.objects.get(id=id)
+            user.delete()
+            return Response(status = status.HTTP_200_OK) # 정상 처리
+        except UserDB.DoesNotExist: 
+            return Response(status = status.HTTP_404_NOT_FOUND) # 사용자가 이용중에 admin이 탈퇴 시켰을 경우 가능
+        except Exception as e:
+            return Response(status = status.HTTP_500_INTERNAL_SERVER_ERROR) # 그 외의 모든 에러
         
         
 
