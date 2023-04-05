@@ -37,24 +37,27 @@ class AccountView(APIView):
             id = data['id']
             return id
         except (ValueError, KeyError):
-            return Response({'error': 'Failed to get access token info from Kakao API.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': 'Failed to get access token info from Kakao API.'}, status = status.HTTP_401_UNAUTHORIZED)
 
         
     def get(self, request):
         id = self.access_token_to_id(request) # 유효성 검증 후 access_token의 id 를 가져옴.
         qs = UserDB.objects.filter(id=id).first()
         if qs:
-            return Response(status=status.HTTP_200_OK)
+            return Response(status = status.HTTP_200_OK)
         else:
-            return Response({'message': 'signup'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'signup'}, status = status.HTTP_404_NOT_FOUND)
         
         
     def post(self, request):
         id = self.access_token_to_id(request) # 유효성 검증 후 access_token의 id 를 가져옴.
         body_json = json.loads(request.body)
         name = body_json.get('name')
+        
+        if UserDB.objects.filter(name = name).exists():
+            return Response(status=status.HTTP_409_CONFLICT)
         try:
-            UserDB.objects.create(id=id,name=name)
+            UserDB.objects.create(id = id,name=name)
         except:
             return Response(status = status.HTTP_400_BAD_REQUEST)
         
