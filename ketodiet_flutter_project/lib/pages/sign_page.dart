@@ -164,10 +164,9 @@ class RegisterWidget {
       child: TextField(
         controller: registerController,
         decoration: const InputDecoration(
-          labelText: 'labelText',
-          helperText: 'helperText',
-          hintText: 'hintText',
-          errorText: 'errorText',
+          labelText: '닉네임',
+          hintText: '2글자 이상, 12글자 이하로 입력해주세요',
+          errorText: '',
           border: OutlineInputBorder(),
         ),
       ),
@@ -232,6 +231,7 @@ class RegisterWidget {
           WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
             Navigator.pop(context);
           });
+        } else if (response.statusCode == 409) {
         } else {
           handleError(
             context,
