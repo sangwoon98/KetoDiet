@@ -46,11 +46,6 @@ Widget testModule(widget) {
 Widget unregister(context) {
   return ElevatedButton(
     onPressed: () async {
-      try {
-        await UserApi.instance.unlink();
-      } catch (e) {
-        handleError(context, e, 'test_dart', 'unregister');
-      }
       http.Response response = await http.delete(
         Uri.http(backendDomain, '/api/account'),
         headers: {
@@ -60,7 +55,13 @@ Widget unregister(context) {
         },
       );
 
-      print(response.statusCode);
+      if (response.statusCode == 200) {
+        try {
+          await UserApi.instance.unlink();
+        } catch (e) {
+          handleError(context, e, 'test_dart', 'unregister');
+        }
+      }
     },
     child: const Text('계정 삭제 (Sign In 돼있을때만 누르기)'),
   );
