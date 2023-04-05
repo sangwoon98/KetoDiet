@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
-    'ketodiet_django_app',
+    'user',
 ]
 
 MIDDLEWARE = [
