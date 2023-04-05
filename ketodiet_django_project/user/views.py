@@ -28,7 +28,7 @@ class AccountView(APIView):
             response.raise_for_status() # status code = 200 이상 일때 requests.exceptions.HTTPError 예외 발생
             return response.json()
         except requests.exceptions.HTTPError as error:
-            raise ValueError(f'Failed to get access token info from Kakao API: {error}')
+            raise ValueError(f'Failed to get access token info from Kakao API: {error}') # f 문자열 포멧팅
     
     def access_token_to_id(self, request):
         access_token = request.headers.get('Authorization', '').split()[1]
@@ -38,24 +38,37 @@ class AccountView(APIView):
             return id
         except (ValueError, KeyError):
             return Response({'error': 'Failed to get access token info from Kakao API.'}, status = status.HTTP_401_UNAUTHORIZED)
-
+        
+    
+    def body_to_json_value(self, request, key):
+        try:
+            body_json = json.loads(request.body)
+            value = body_json.get(key)
+        
+        except json.JSONDecodeError as e:
+            # JSON 디코딩에 문제가 있는 경우 400 Bad Request 상태 코드와 함께 에러 메시지를 응답으로 반환
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return value
+            
+            
         
     def get(self, request):
         id = self.access_token_to_id(request) # 유효성 검증 후 access_token의 id 를 가져옴.
-        qs = UserDB.objects.filter(id=id).first()
+        qs = UserDB.objects.filter(id=id).first() # first method 사용시 요청이 존재하지 않으면 NONE으로 처리
         if qs:
-            return Response(status = status.HTTP_200_OK)
+            name= str(qs)
+            return Response({'name': name},status = status.HTTP_200_OK)
         else:
             return Response({'message': 'signup'}, status = status.HTTP_404_NOT_FOUND)
         
         
     def post(self, request):
         id = self.access_token_to_id(request) # 유효성 검증 후 access_token의 id 를 가져옴.
-        body_json = json.loads(request.body)
-        name = body_json.get('name')
+        name = self.body_to_json_value(request, 'name') # key 값을 넣으면 body에서 value를 가져옴.
         
         if UserDB.objects.filter(name = name).exists():
-            return Response(status=status.HTTP_409_CONFLICT)
+            return Response(status=status.HTTP_409_CONFLICT) # 아이디 중복
         try:
             UserDB.objects.create(id = id,name=name)
         except:
@@ -63,6 +76,20 @@ class AccountView(APIView):
         
         return Response(status = status.HTTP_201_CREATED)
     
+    
+    def put(self, request):
+        id = self.access_token_to_id(request)
+        newname = self.body_to_json_value(request, 'name')
+        
+        if UserDB.objects.filter(name = newname).exists():
+            return Response(status=status.HTTP_409_CONFLICT) # 아이디 중복
+        else:
+            user = UserDB.objects.get(id=id)
+            user.name = newname
+            user.name.save()
+            return Response(status=status.HTTP_200_OK)
+            
+            
     def delete(self, request):
         id = self.access_token_to_id(request) # 유효성 검증 후 access_token의 id 를 가져옴.
         try:
@@ -74,6 +101,8 @@ class AccountView(APIView):
         except Exception as e:
             return Response(status = status.HTTP_500_INTERNAL_SERVER_ERROR) # 그 외의 모든 에러
         
+    
+                    
         
 
 
