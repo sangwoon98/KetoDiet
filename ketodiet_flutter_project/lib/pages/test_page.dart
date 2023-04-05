@@ -7,8 +7,6 @@ import '../secret.dart';
 import '../modules/account.dart';
 import '../modules/app_bar.dart';
 
-import 'sign_page.dart';
-
 class TestPage extends StatefulWidget {
   const TestPage({super.key});
 
@@ -27,7 +25,6 @@ class _TestPageState extends State<TestPage> {
           child: Column(
             children: [
               testModule(unregister(context)),
-              testModule(RegisterWidget().form(context)),
             ],
           ),
         ),
