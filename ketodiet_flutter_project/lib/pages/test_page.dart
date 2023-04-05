@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
-import 'package:ketodiet_flutter_project/modules/handle.dart';
 
-import '../secret.dart';
-import '../modules/account.dart';
 import '../modules/app_bar.dart';
 
 class TestPage extends StatefulWidget {
@@ -23,9 +18,7 @@ class _TestPageState extends State<TestPage> {
         width: double.infinity,
         child: SingleChildScrollView(
           child: Column(
-            children: [
-              testModule(unregister(context)),
-            ],
+            children: const [],
           ),
         ),
       ),
@@ -40,29 +33,5 @@ Widget testModule(widget) {
       padding: const EdgeInsets.all(10.0),
       child: widget,
     ),
-  );
-}
-
-Widget unregister(context) {
-  return ElevatedButton(
-    onPressed: () async {
-      http.Response response = await http.delete(
-        Uri.http(backendDomain, '/api/account'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': '${(await getToken(context))!.toJson()}',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        try {
-          await UserApi.instance.unlink();
-        } catch (e) {
-          handleError(context, e, 'test_dart', 'unregister');
-        }
-      }
-    },
-    child: const Text('계정 삭제 (Sign In 돼있을때만 누르기)'),
   );
 }

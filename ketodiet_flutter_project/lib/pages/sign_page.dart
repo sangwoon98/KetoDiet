@@ -294,11 +294,11 @@ class RegisterWidget {
           } else if (response.statusCode == 409) {
             registerValidator = false;
           } else {
-            handleError(
+            await handleError(
               context,
               'Response Status Code Error.\nStatusCode: ${response.statusCode}',
               'sign_page.dart',
-              'registerWidget',
+              'RegisterWidget.submitButton',
             );
           }
         }

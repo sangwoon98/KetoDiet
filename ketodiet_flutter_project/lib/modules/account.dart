@@ -37,11 +37,11 @@ Future<bool> getTokenStatus(context) async {
           OAuthToken? oldToken = await getToken(context);
           await AuthApi.instance.refreshToken(oldToken: oldToken!);
         } catch (error) {
-          handleError(context, error, 'account.dart', 'getTokenStatus');
+          await handleError(context, error, 'account.dart', 'getTokenStatus');
           return false;
         }
       } else {
-        handleError(context, error, 'account.dart', 'getTokenStatus');
+        await handleError(context, error, 'account.dart', 'getTokenStatus');
         return false;
       }
     }
@@ -56,7 +56,7 @@ Future<OAuthToken?> getToken(context) async {
   try {
     return await TokenManagerProvider.instance.manager.getToken();
   } catch (error) {
-    handleError(context, error, 'account.dart', 'getToken');
+    await handleError(context, error, 'account.dart', 'getToken');
   }
   return null;
 }
@@ -65,6 +65,6 @@ Future<void> dropToken(context) async {
   try {
     await UserApi.instance.logout();
   } catch (error) {
-    await handleError(context, error, 'sign_page.dart', 'dropToken');
+    await handleError(context, error, 'account.dart', 'dropToken');
   }
 }
