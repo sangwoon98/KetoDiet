@@ -1,18 +1,15 @@
 from user.models import UserDB
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+# from rest_framework.decorators import api_view
 from rest_framework import status
 import requests
 import base64
 import json
-import jwt
-#____________________________________
+#____________________________________ 
 # from rest_framework.views import APIView
 #_______________________________________
 
 from rest_framework.views import APIView
-from rest_framework.response import Response
-import requests
 from .models import UserDB
 
 
@@ -100,7 +97,6 @@ class AccountView(APIView):
             return Response(status = status.HTTP_404_NOT_FOUND) # 사용자가 이용중에 admin이 탈퇴 시켰을 경우 가능
         except Exception as e:
             return Response(status = status.HTTP_500_INTERNAL_SERVER_ERROR) # 그 외의 모든 에러
-        
     
                     
         
