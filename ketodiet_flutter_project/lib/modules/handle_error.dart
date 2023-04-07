@@ -14,20 +14,21 @@ class ErrorArgs {
 
 class ErrorManager {
   StreamController<ErrorArgs?> streamController = StreamController<ErrorArgs?>.broadcast();
-  ErrorArgs? errorArgs;
+  ErrorArgs? errorArguments;
 
   ErrorManager() {
     streamController.stream.listen((event) {
-      errorArgs = event;
+      errorArguments = event;
     });
   }
 
   ErrorArgs? get() {
-    return errorArgs;
+    return errorArguments;
   }
 
   void set([ErrorArgs? errorArgs]) {
     streamController.add(errorArgs);
+    errorArguments = errorArgs;
   }
 
   void clear() {
@@ -45,18 +46,29 @@ class HandleError {
   }
 
   static Future<void> pushError(BuildContext context) async {
+    // TODO: Dialog 디자인
     return await showDialog(
       context: context,
       builder: (context) {
-        return const AlertDialog(
-          title: Text(
+        return AlertDialog(
+          title: const Text(
             'ERROR!!!',
             style: TextStyle(
               color: Colors.red,
             ),
           ),
+          content: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(errorManager.get()?.error is String ? errorManager.get()!.error : 'null'),
+              Text(errorManager.get()?.file is String ? errorManager.get()!.file : 'null'),
+              Text(errorManager.get()?.method is String ? errorManager.get()!.method : 'null'),
+            ],
+          ),
         );
       },
+      barrierDismissible: false,
     );
   }
 

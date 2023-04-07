@@ -39,15 +39,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    HandleAccount.init();
+
     return MaterialApp(
       onGenerateRoute: (settings) {
         if (routes.containsKey(settings.name)) {
           return PageRouteBuilder(
-              settings: RouteSettings(
-                name: settings.name,
-                arguments: settings.arguments,
-              ),
-              pageBuilder: (_, __, ___) => routes[settings.name]!);
+            settings: RouteSettings(
+              name: settings.name,
+              arguments: settings.arguments,
+            ),
+            pageBuilder: (_, __, ___) => routes[settings.name]!,
+          );
         }
 
         return null;

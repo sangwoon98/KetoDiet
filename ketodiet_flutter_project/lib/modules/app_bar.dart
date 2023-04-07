@@ -1,11 +1,5 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
 
-import '../secret.dart';
 import '../modules/handle.dart';
 
 AppBar appBar(context) {
@@ -101,6 +95,9 @@ class PageButton {
 class Actions {
   static List<Widget> actions(context) {
     return [
+      // TODO: sign status 에 따라 다르게 보이게
+      nameButton(context),
+      deleteButton(context),
       settingButton(context),
       signInButton(context),
       signOutButton(context),
@@ -136,10 +133,37 @@ class Actions {
       hoverColor: Colors.transparent,
       highlightColor: Colors.transparent,
       splashColor: Colors.transparent,
-      onPressed: () {
-        // TODO: onPressed
+      onPressed: () async {
+        // TODO: settingButton
+        await HandleAccount.get(context);
       },
       icon: const Icon(Icons.settings),
+    );
+  }
+
+  // TODO: test 완료 후 삭제
+  static Widget nameButton(context) {
+    return IconButton(
+      hoverColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      splashColor: Colors.transparent,
+      onPressed: () async {
+        await HandleAccount.patch(context);
+      },
+      icon: const Icon(Icons.tag),
+    );
+  }
+
+  // TODO: test 완료 후 삭제
+  static Widget deleteButton(context) {
+    return IconButton(
+      hoverColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      splashColor: Colors.transparent,
+      onPressed: () async {
+        await HandleAccount.delete(context);
+      },
+      icon: const Icon(Icons.delete),
     );
   }
 }

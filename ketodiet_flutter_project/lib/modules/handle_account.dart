@@ -20,33 +20,37 @@ class AccountArgs {
 class AccountManager {
   StreamController<OAuthToken?> oAuthTokenStreamController = StreamController<OAuthToken?>.broadcast();
   StreamController<String?> nameStreamController = StreamController<String?>.broadcast();
-  AccountArgs accountArgs = AccountArgs();
+  AccountArgs accountArguments = AccountArgs();
 
   AccountManager() {
     oAuthTokenStreamController.stream.listen((event) {
-      accountArgs.oAuthToken = event;
+      accountArguments.oAuthToken = event;
     });
     nameStreamController.stream.listen((event) {
-      accountArgs.name = event;
+      accountArguments.name = event;
     });
   }
 
   AccountArgs get() {
-    return accountArgs;
+    return accountArguments;
   }
 
   void set({AccountArgs? accountArgs, OAuthToken? oAuthToken, String? name}) {
     if (accountArgs == null) {
       if (oAuthToken != null) {
         oAuthTokenStreamController.add(oAuthToken);
+        accountArguments.oAuthToken = oAuthToken;
       }
 
       if (name != null) {
         nameStreamController.add(name);
+        accountArguments.name = name;
       }
     } else {
       oAuthTokenStreamController.add(accountArgs.oAuthToken);
       nameStreamController.add(accountArgs.name);
+      accountArgs.oAuthToken = oAuthToken;
+      accountArguments.name = name;
     }
   }
 
@@ -57,6 +61,31 @@ class AccountManager {
 }
 
 class HandleAccount {
+  static Future<void> init() async {
+    if (await AuthApi.instance.hasToken()) {
+      OAuthToken? oAuthToken = await TokenManagerProvider.instance.manager.getToken();
+      accountManager.set(oAuthToken: oAuthToken);
+
+      if (accountManager.get().name is! String) {
+        http.Response response = await http.get(
+          Uri.http(backendDomain, '/api/account'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+          },
+        );
+
+        if (response.statusCode == 200) {
+          accountManager.set(name: jsonDecode(response.body)['name']);
+        } else {
+          accountManager.clear();
+          await TokenManagerProvider.instance.manager.clear();
+        }
+      }
+    }
+  }
+
   static Future<void> signIn(BuildContext context) async {
     if (await isKakaoTalkInstalled()) {
       try {
@@ -112,7 +141,7 @@ class HandleAccount {
       accountManager.set(oAuthToken: oAuthToken);
     }
 
-    if (accountManager.accountArgs.oAuthToken is OAuthToken) {
+    if (accountManager.get().oAuthToken is OAuthToken) {
       http.Response response = await http.get(
         Uri.http(backendDomain, '/api/account'),
         headers: {
@@ -156,7 +185,18 @@ class HandleAccount {
     );
   }
 
-  static Future<void> delete(BuildContext context) async {}
+  static Future<void> delete(BuildContext context) async {
+    accountManager.clear();
+    if (await AuthApi.instance.hasToken()) {
+      try {
+        await UserApi.instance.unlink();
+      } catch (error) {
+        errorManager.set(ErrorArgs('$error', 'handle.dart', 'HandleAccount.delete'));
+      }
+    }
+
+    if (context.mounted) await HandleError.ifErroredPushError(context);
+  }
 }
 
 class SetNameWidget {
@@ -366,7 +406,7 @@ class SetNameWidget {
                 registerValidator = false;
               }
 
-              if (context.mounted) await HandleError.ifErroredPushError(context);
+              if (context.mounted) HandleError.ifErroredPushError(context);
             }
             if (registerKey.currentState!.validate()) {
               accountManager.set(name: registerController.text);
