@@ -106,7 +106,7 @@ class AccountView(APIView):
         else:
             user = UserDB.objects.get(id=id)
             user.name = newname
-            user.name.save()
+            user.save()
             return Response(status=status.HTTP_200_OK)
             
             
