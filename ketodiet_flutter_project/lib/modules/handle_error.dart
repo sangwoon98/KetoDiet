@@ -66,6 +66,9 @@ class HandleError {
               Text(errorManager.get()?.method is String ? errorManager.get()!.method : 'null'),
             ],
           ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
         );
       },
       barrierDismissible: false,

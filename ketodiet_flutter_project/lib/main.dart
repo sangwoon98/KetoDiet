@@ -9,7 +9,6 @@ import 'pages/challenge_page.dart';
 import 'pages/community_page.dart';
 import 'pages/info_page.dart';
 import 'pages/main_page.dart';
-import 'pages/setting_page.dart';
 import 'pages/test_page.dart';
 
 final routes = {
@@ -18,7 +17,6 @@ final routes = {
   '/info': const InfoPage(),
   '/community': const CommunityPage(),
   '/challenge': const ChallengePage(),
-  '/setting': const SettingPage(),
   '/test': const TestPage(),
 };
 

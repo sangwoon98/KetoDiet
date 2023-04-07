@@ -14,7 +14,7 @@ class _TestPageState extends State<TestPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: appBar(context),
+      appBar: CustomAppBar.widget(context),
       body: SizedBox(
         width: double.infinity,
         child: SingleChildScrollView(

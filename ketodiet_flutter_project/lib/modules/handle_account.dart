@@ -91,13 +91,13 @@ class HandleAccount {
       try {
         accountManager.set(oAuthToken: await UserApi.instance.loginWithKakaoTalk());
       } catch (error) {
-        errorManager.set(ErrorArgs('$error', 'handle.dart', 'HandleAccount.signIn'));
+        errorManager.set(ErrorArgs('$error', 'handle_account.dart', 'HandleAccount.init'));
       }
     } else {
       try {
         accountManager.set(oAuthToken: await UserApi.instance.loginWithKakaoAccount());
       } catch (error) {
-        errorManager.set(ErrorArgs('$error', 'handle.dart', 'HandleAccount.signIn'));
+        errorManager.set(ErrorArgs('$error', 'handle_account.dart', 'HandleAccount.init'));
       }
     }
 
@@ -112,7 +112,7 @@ class HandleAccount {
       try {
         TokenManagerProvider.instance.manager.clear();
       } catch (error) {
-        errorManager.set(ErrorArgs('$error', 'handle.dart', 'HandleAccount.signIn'));
+        errorManager.set(ErrorArgs('$error', 'handle_account.dart', 'HandleAccount.signOut'));
       }
     }
 
@@ -157,12 +157,14 @@ class HandleAccount {
         if (context.mounted) await post(context);
       } else {
         errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
-            'handle_account.dart', 'HandleAccount._getName'));
+            'handle_account.dart', 'HandleAccount.get'));
         if (context.mounted) await signOut(context);
       }
     } else {
       if (context.mounted) await signOut(context);
     }
+
+    if (context.mounted) await HandleError.ifErroredPushError(context);
   }
 
   static Future<void> post(BuildContext context) async {
@@ -191,7 +193,7 @@ class HandleAccount {
       try {
         await UserApi.instance.unlink();
       } catch (error) {
-        errorManager.set(ErrorArgs('$error', 'handle.dart', 'HandleAccount.delete'));
+        errorManager.set(ErrorArgs('$error', 'handle_account.dart', 'HandleAccount.delete'));
       }
     }
 
@@ -215,6 +217,9 @@ class SetNameWidget {
           _padding(_postButtons(context), 10, 10, 10, 10),
         ],
       ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20.0),
+      ),
     );
   }
 
@@ -227,6 +232,9 @@ class SetNameWidget {
           _padding(_textField(), 10, 10, 10, 10),
           _padding(_patchButtons(context), 10, 10, 10, 10),
         ],
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20.0),
       ),
     );
   }
@@ -333,7 +341,7 @@ class SetNameWidget {
                 registerValidator = false;
               } else {
                 errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
-                    'handle_account.dart', 'RegisterWidget._submitButton'));
+                    'handle_account.dart', 'SetNameWidget._postButtons'));
                 registerValidator = false;
               }
 
@@ -402,7 +410,7 @@ class SetNameWidget {
                 registerValidator = false;
               } else {
                 errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
-                    'handle_account.dart', 'RegisterWidget._submitButton'));
+                    'handle_account.dart', 'SetNameWidget._patchButtons'));
                 registerValidator = false;
               }
 
