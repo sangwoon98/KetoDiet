@@ -1,39 +1,17 @@
-import 'package:flutter/material.dart';
+export '../modules/handle_account.dart';
+export '../modules/handle_error.dart';
 
-class ErrorArgs {
-  final String error;
-  final String route;
-  final String file;
-  final String method;
 
-  ErrorArgs(this.error, this.route, this.file, this.method);
-}
+// class SignArgs {
+//   final String signType;
 
-Future handleError(context, error, file, method) async {
-  WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-    await Navigator.pushReplacementNamed(
-      context,
-      '/error',
-      arguments: ErrorArgs(
-        '$error',
-        '${ModalRoute.of(context)?.settings.name}',
-        '$file',
-        '$method',
-      ),
-    );
-  });
-}
+//   SignArgs(this.signType);
+// }
 
-class SignArgs {
-  final String signType;
-
-  SignArgs(this.signType);
-}
-
-void handleSign(context, signType) {
-  Navigator.pushNamed(
-    context,
-    '/sign',
-    arguments: SignArgs('$signType'),
-  );
-}
+// void handleSign(context, signType) {
+//   Navigator.pushNamed(
+//     context,
+//     '/sign',
+//     arguments: SignArgs('$signType'),
+//   );
+// }
