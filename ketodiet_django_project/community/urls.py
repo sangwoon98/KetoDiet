@@ -20,7 +20,7 @@ from . import views
 
 urlpatterns = [
     path('',views.CommunityList.as_view()),
-    path('view',views.Community.as_view())
+    path('view',views.CommunityView.as_view())
 ]
 
 # urlpatterns = [
