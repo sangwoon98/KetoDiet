@@ -11,3 +11,4 @@ code_challenge = base64.urlsafe_b64encode(code_challenge).decode('utf-8').replac
 
 print(code_verifier)
 print(code_challenge)
+

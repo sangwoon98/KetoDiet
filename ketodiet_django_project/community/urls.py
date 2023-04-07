@@ -19,7 +19,8 @@ from . import views
 
 
 urlpatterns = [
-    path('community')
+    path('',views.CommunityList.as_view()),
+    path('view',views.Community.as_view())
 ]
 
 # urlpatterns = [

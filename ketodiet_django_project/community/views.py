@@ -2,76 +2,89 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from ketodiet_django_project.board.models import CommunityDB
 from django.core.paginator import Paginator
-
-
 #---------------------------------
 from rest_framework import generics, pagination
 from .serializers import CommunityDBSerializer
 from .models import CommunityDB
-
-
 from rest_framework import serializers
-from .models import CommunityDB
+from user.views import AccountView
 
-class CommunityDBSerializer(serializers.ModelSerializer):
+class CommunityDBSerializerNoContent(serializers.ModelSerializer):
     class Meta:
         model = CommunityDB
-        fields = '__all__'
+        fields = '__all__' # 디폴트로 모든값들을 직렬화 시킴
+        exclude = ('content',) # content 칼럼만 제외
+        
+# DB 모델 인스턴스나 QuerySet 데이터를 JSON으로 반환 , 출력값: fields로 고정, data={'name':name}형태로 삽입후 직렬화 가능,
+class CommunityDBSerializer(serializers.ModelSerializer): 
+    class Meta:
+        model = CommunityDB
+        fields = '__all__' # 디폴트로 모든값들을 직렬화 시킴
+        
+        
 
 class CommunityListPagination(pagination.PageNumberPagination): # DRF에서 제공하는 pagination을 상속
     page_size = 20
 
 class CommunityList(generics.ListAPIView): # serializer_class,pagination_class 두가지만 지정해주면 DRF에서 response까지 보냄.
     queryset = CommunityDB.objects.order_by('-num')
-    serializer_class = CommunityDBSerializer  
+    serializer_class = CommunityDBSerializerNoContent  
     pagination_class = CommunityListPagination
 
-class Community(APIView):
+class CommunityView(APIView):
     
     def body_get_multy_value(self, request, keys):
         return [request.data.get(key) for key in keys]
 
     def get(self, request):
-        community_list = CommunityList.as_view()(request).data
-        return Response(community_list)
+       num = request.headers.get('num')
+       qs = CommunityDB.objects.get(num)
+       serializer = CommunityDBSerializer(qs)
+       return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
+        id = AccountView.access_token_to_id
         data = self.body_get_multy_value(request, ['name', 'title', 'content'])
-        serializer = CommunityDBSerializer(data={'name': data[0], 'title': data[1], 'content': data[2]})
+        serializer = CommunityDBSerializer(data={'id':id, 'name': data[0], 'title': data[1], 'content': data[2]}) 
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request, pk):
-        community = CommunityDB.objects.get(pk=pk)
-        data = self.body_get_multy_value(request, ['name', 'title', 'content'])
-        serializer = CommunityDBSerializer(community, data={'name': data[0], 'title': data[1], 'content': data[2]})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def patch(self, request, pk):
-        community = CommunityDB.objects.get(pk=pk)
+    def patch(self, request):
+        AccountView.access_token_to_id # 유효성만 검증
+        num = request.headers.get('num')
+        community = CommunityDB.objects.get(num=num)
         data = {}
         for key in request.data.keys():
             data[key] = request.data[key]
         serializer = CommunityDBSerializer(community, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            return Response(status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, pk):
-        community = CommunityDB.objects.get(pk=pk)
+    def delete(self, request):
+        AccountView.access_token_to_id # 유효성만 검증
+        num = request.headers.get('num')
+        community = CommunityDB.objects.get(num=num)
         community.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_200_OK)
+    
+
+    # def put(self, request, pk):
+    #     community = CommunityDB.objects.get(pk=pk)
+    #     data = self.body_get_multy_value(request, ['name', 'title', 'content'])
+    #     serializer = CommunityDBSerializer(community, data={'name': data[0], 'title': data[1], 'content': data[2]})
+    #     if serializer.is_valid():
+    #         serializer.save()
+    #         return Response(serializer.data)
+    #     else:
+    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 #---------------------------------

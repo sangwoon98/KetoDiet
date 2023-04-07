@@ -15,6 +15,29 @@ from .models import UserDB
 
 class AccountView(APIView):
     
+    # def access_token_validation(self, access_token):
+    #     headers = {
+    #         'Authorization': f'Bearer {access_token}',
+    #     }
+    #     url = 'https://kapi.kakao.com/v1/user/access_token_info'
+    #     try:
+    #         response = requests.get(url, headers=headers)
+    #         response.raise_for_status() # status code = 200 이상 일때 requests.exceptions.HTTPError 예외 발생
+    #         return response.json()
+    #     except requests.exceptions.HTTPError as error:
+    #         return Response(status=status.HTTP_400_BAD_REQUEST)
+    #         raise ValueError(f'Failed to get access token info from Kakao API: {error}') # f 문자열 포멧팅
+    
+    # def access_token_to_id(self, request):
+    #     access_token = request.headers.get('Authorization', '').split()[1]
+    #     try:
+    #         data = self.access_token_validation(access_token)
+    #         id = data['id']
+    #         return id
+    #     except (ValueError, KeyError):
+    #         return Response({'error': 'Failed to get access token info from Kakao API.'}, status = status.HTTP_401_UNAUTHORIZED)
+        
+        
     def access_token_validation(self, access_token):
         headers = {
             'Authorization': f'Bearer {access_token}',
@@ -25,17 +48,17 @@ class AccountView(APIView):
             response.raise_for_status() # status code = 200 이상 일때 requests.exceptions.HTTPError 예외 발생
             return response.json()
         except requests.exceptions.HTTPError as error:
-            raise ValueError(f'Failed to get access token info from Kakao API: {error}') # f 문자열 포멧팅
+            return None # access_token이 유효하지 않은 경우 None 반환
     
     def access_token_to_id(self, request):
         access_token = request.headers.get('Authorization', '').split()[1]
-        try:
-            data = self.access_token_validation(access_token)
-            id = data['id']
-            return id
-        except (ValueError, KeyError):
-            return Response({'error': 'Failed to get access token info from Kakao API.'}, status = status.HTTP_401_UNAUTHORIZED)
-        
+        data = self.access_token_validation(access_token)
+        if data is None: # 토큰값이 없거나 잘못돼서 id값을 가져오지 못했을때
+            return Response({'error': 'Invalid access token.'}, status=status.HTTP_401_UNAUTHORIZED)
+        id = data.get('id')
+        if not id: # 카카오 api가 변경돼었을 때
+            return Response({'error': 'Failed to get access token info from Kakao API.'}, status=status.HTTP_401_UNAUTHORIZED) 
+        return id
     
     def body_to_json_value(self, request, key):
         try:
@@ -69,12 +92,12 @@ class AccountView(APIView):
         try:
             UserDB.objects.create(id = id,name=name)
         except:
-            return Response(status = status.HTTP_400_BAD_REQUEST)
+            return Response(status = status.HTTP_400_BAD_REQUEST) # 생성에 실패 했을때
         
-        return Response(status = status.HTTP_201_CREATED)
+        return Response(status = status.HTTP_201_CREATED) #정상적으로 생성
     
     
-    def put(self, request):
+    def patch(self, request):
         id = self.access_token_to_id(request)
         newname = self.body_to_json_value(request, 'name')
         
