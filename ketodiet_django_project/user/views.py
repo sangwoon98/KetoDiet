@@ -14,29 +14,6 @@ from .models import UserDB
 
 
 class AccountView(APIView):
-    
-    # def access_token_validation(self, access_token):
-    #     headers = {
-    #         'Authorization': f'Bearer {access_token}',
-    #     }
-    #     url = 'https://kapi.kakao.com/v1/user/access_token_info'
-    #     try:
-    #         response = requests.get(url, headers=headers)
-    #         response.raise_for_status() # status code = 200 이상 일때 requests.exceptions.HTTPError 예외 발생
-    #         return response.json()
-    #     except requests.exceptions.HTTPError as error:
-    #         return Response(status=status.HTTP_400_BAD_REQUEST)
-    #         raise ValueError(f'Failed to get access token info from Kakao API: {error}') # f 문자열 포멧팅
-    
-    # def access_token_to_id(self, request):
-    #     access_token = request.headers.get('Authorization', '').split()[1]
-    #     try:
-    #         data = self.access_token_validation(access_token)
-    #         id = data['id']
-    #         return id
-    #     except (ValueError, KeyError):
-    #         return Response({'error': 'Failed to get access token info from Kakao API.'}, status = status.HTTP_401_UNAUTHORIZED)
-        
         
     def access_token_validation(self, access_token):
         headers = {
@@ -77,8 +54,9 @@ class AccountView(APIView):
         id = self.access_token_to_id(request) # 유효성 검증 후 access_token의 id 를 가져옴.
         qs = UserDB.objects.filter(id=id).first() # first method 사용시 요청이 존재하지 않으면 NONE으로 처리
         if qs:
-            name= str(qs)
-            return Response({'name': name},status = status.HTTP_200_OK)
+            name = qs.name
+            isAdmin = qs.isAdmin
+            return Response({'name': name, 'isAdmin':isAdmin},status = status.HTTP_200_OK)
         else:
             return Response({'message': 'signup'}, status = status.HTTP_404_NOT_FOUND)
         
@@ -118,10 +96,30 @@ class AccountView(APIView):
             return Response(status = status.HTTP_200_OK) # 정상 처리
         except UserDB.DoesNotExist: 
             return Response(status = status.HTTP_404_NOT_FOUND) # 사용자가 이용중에 admin이 탈퇴 시켰을 경우 가능
-        except Exception as e:
+        except Exception:
             return Response(status = status.HTTP_500_INTERNAL_SERVER_ERROR) # 그 외의 모든 에러
     
-                    
+
+# 페이지 네이터 작업 필요
+    
+# class Adminuser(AccountView):
+    
+#     def get(self, request): # user 정보 요청
+#         id = self.access_token_to_id(request)
+#         try:
+#             user=UserDB.objects.get(id=id)
+#             if user.isAdmin == True:
+#                 UserDB.objects.get()
+#                 return Response({}, status= status.HTTP_200_OK)
+#             else:
+#                 return Response(status= status.HTTP_403_FORBIDDEN) # 권한 없음
+#         except UserDB.DoesNotExist: 
+#             return Response(status = status.HTTP_404_NOT_FOUND) # 사용자가 이용중에 admin이 탈퇴 시켰을 경우 가능
+#         except Exception:
+#             return Response(status = status.HTTP_500_INTERNAL_SERVER_ERROR) # 그 외의 모든 에러
+        
+#     def post(self, request):
+#         id = self.access_token_to_id(request)
         
 
 

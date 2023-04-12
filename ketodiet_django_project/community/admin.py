@@ -1,3 +1,6 @@
 from django.contrib import admin
+from community.models import CommunityDB
 
-# Register your models here.
+@admin.register(CommunityDB)
+class CommunityDB(admin.ModelAdmin):
+    list_display = ['post_num','title']
