@@ -25,7 +25,7 @@ class CommunityPostList {
   }
 
   static Map<String, dynamic> initQuery(CommunityPostList communityPostList) {
-    Map<String, dynamic> query = {'page': communityPostList.pageNum};
+    Map<String, dynamic> query = {'page': communityPostList.pageNum.toString()};
     if (communityPostList.category is String) query['category'] = communityPostList.category;
     if (communityPostList.target is String) query['target'] = communityPostList.target;
     if (communityPostList.keyword is String) query['keyword'] = communityPostList.keyword;
@@ -37,8 +37,7 @@ class CommunityPostList {
 class HandleCommunity {
   static Future<CommunityPostList> getPostList(BuildContext context, CommunityPostList postList) async {
     Map<String, dynamic> query = CommunityPostList.initQuery(postList);
-    print(query);
-    print(Uri.http(backendDomain, '/api/community', query));
+
     http.Response response = await http.get(
       Uri.http(backendDomain, '/api/community', query),
     );
@@ -46,10 +45,11 @@ class HandleCommunity {
     if (response.statusCode != 200) {
       errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
           'handle_community.dart', 'HandleCommunity.getPostList'));
+      if (context.mounted) await HandleError.ifErroredPushError(context);
     } else {
       Map jsonData = jsonDecode(response.body)['serializer'];
       if (jsonData.containsKey('results')) {
-        List<Map<String, dynamic>> results = jsonData['results'];
+        List results = jsonData['results'];
 
         for (var element in results) {
           postList.list!.add(CommunityPost(

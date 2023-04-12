@@ -42,9 +42,9 @@ class ForumWidget {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(200.0, 50.0, 200.0, 100.0),
       itemBuilder: (BuildContext context, int index) {
-        return _postRow();
+        return _postRow(postList.list![index]);
       },
-      itemCount: 100,
+      itemCount: postList.list!.length,
     );
   }
 
@@ -76,15 +76,15 @@ class ForumWidget {
     return const SizedBox();
   }
 
-  static Widget _postRow() {
+  static Widget _postRow(CommunityPost communityPost) {
     return Row(
       children: [
-        _expanded(const Text('1234567890'), 1),
-        _expanded(const Text('삼십육개글자삼십육개글자삼십육개글자삼십육개글자삼십육개글자삼십육개글자'), 6),
-        _expanded(const Text('열두글자짜리닉네임입니다'), 2),
-        _expanded(const Text('2023/04/07')),
-        _expanded(const Text('1234567890')),
-        _expanded(const Text('1234567890')),
+        _expanded(Text(communityPost.postNum.toString())),
+        _expanded(Text(communityPost.title), 6),
+        _expanded(Text(communityPost.name), 2),
+        _expanded(Text(communityPost.createDate.toString())),
+        _expanded(Text(communityPost.hit.toString())),
+        _expanded(Text(communityPost.recommend.toString())),
       ],
     );
   }
