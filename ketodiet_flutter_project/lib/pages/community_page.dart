@@ -4,9 +4,9 @@ import 'package:ketodiet_flutter_project/modules/handle.dart';
 import '../modules/app_bar.dart';
 
 class CommunityPage extends StatefulWidget {
-  final Map<String, String>? params;
+  final Map<String, dynamic> params;
 
-  const CommunityPage({super.key, this.params});
+  const CommunityPage(this.params, {super.key});
 
   @override
   State<CommunityPage> createState() => _CommunityPageState();
@@ -15,27 +15,30 @@ class CommunityPage extends StatefulWidget {
 class _CommunityPageState extends State<CommunityPage> {
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: CommunityForum.get(context, widget.params),
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          if (snapshot.data) {
-            setState(() {});
-          } else {
-            WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-              Navigator.pushReplacementNamed(context, '/community');
-            });
-          }
-        }
+    if (widget.params.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+        Navigator.pushReplacementNamed(context, '/community');
+      });
+    }
 
-        return SizedBox();
-      },
+    return Scaffold(
+      appBar: CustomAppBar.widget(context),
+      body: FutureBuilder(
+        future: HandleCommunity.getPostList(context, CommunityPostList(1)),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return ForumWidget.widget(snapshot.data!);
+          } else {
+            return const CircularProgressIndicator();
+          }
+        },
+      ),
     );
   }
 }
 
 class ForumWidget {
-  static Widget widget(CommunityForum params) {
+  static Widget widget(CommunityPostList postList) {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(200.0, 50.0, 200.0, 100.0),
       itemBuilder: (BuildContext context, int index) {

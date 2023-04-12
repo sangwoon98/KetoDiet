@@ -4,9 +4,9 @@ import '../modules/app_bar.dart';
 import '../modules/handle.dart';
 
 class TestPage extends StatefulWidget {
-  final Map<String, String>? params;
+  final Map<String, dynamic> params;
 
-  const TestPage({super.key, this.params});
+  const TestPage(this.params, {super.key});
 
   @override
   State<TestPage> createState() => _TestPageState();
@@ -15,7 +15,7 @@ class TestPage extends StatefulWidget {
 class _TestPageState extends State<TestPage> {
   @override
   Widget build(BuildContext context) {
-    if (widget.params != null) {
+    if (widget.params.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
         Navigator.pushReplacementNamed(context, '/test');
       });
@@ -28,9 +28,7 @@ class _TestPageState extends State<TestPage> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              testModule(oAuthTokenText()),
-              testModule(nameText()),
-              testModule(errors()),
+              testModule(button(context)),
             ],
           ),
         ),
@@ -80,4 +78,38 @@ Widget errors() {
           ],
         );
       });
+}
+
+Widget button(context) {
+  return ElevatedButton(
+    onPressed: () async {
+      if (context.mounted) {
+        await showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('페이지가 존재하지 않습니다.'),
+              content: const Text('검색 결과가 존재 하지 않거나 해당 페이지가 존재하지 않습니다.'),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                      Navigator.pushReplacementNamed(context, '/community');
+                    });
+                  },
+                  child: const Text('확인'),
+                ),
+              ],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+            );
+          },
+          barrierDismissible: false,
+        );
+      }
+    },
+    child: const Text('발작버튼'),
+  );
 }

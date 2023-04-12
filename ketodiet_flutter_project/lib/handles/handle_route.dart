@@ -8,33 +8,35 @@ import '../pages/main_page.dart';
 import '../pages/test_page.dart';
 
 class HandleRoute {
+  static late List<String> uri;
+  static late String path;
+  static late Map<String, dynamic> params;
+
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
-    List<String> uri = settings.name!.split('?');
-    String path = uri.first;
-    Map<String, String>? params = uri.first == uri.last ? null : Uri.splitQueryString(uri.last);
+    uri = settings.name!.split('?');
+    path = uri.first;
+    params = uri.first == uri.last ? {} : Uri.splitQueryString(uri.last);
+    if (settings.arguments != null) params['additional'] = settings.arguments;
+
+    final Map<String, Widget> routes = {
+      '/': MainPage(params),
+      '/about-us': AboutUsPage(params),
+      '/info': InfoPage(params),
+      '/community': CommunityPage(params),
+      '/challenge': ChallengePage(params),
+      '/test': TestPage(params),
+    };
+
+    if (!routes.containsKey(path)) {
+      settings = const RouteSettings(name: '/', arguments: {});
+      path = '/';
+    }
 
     return PageRouteBuilder(
       settings: settings,
       pageBuilder: (_, __, ___) {
-        return route(path: path, params: params);
+        return routes[path]!;
       },
     );
-  }
-
-  static Widget route({required String path, Map<String, String>? params}) {
-    final Map<String, Widget> routes = {
-      '/': MainPage(params: params),
-      '/about-us': AboutUsPage(params: params),
-      '/info': InfoPage(params: params),
-      '/community': CommunityPage(params: params),
-      '/challenge': ChallengePage(params: params),
-      '/test': TestPage(params: params),
-    };
-
-    if (routes.containsKey(path)) {
-      return routes[path]!;
-    } else {
-      return routes['/']!;
-    }
   }
 }

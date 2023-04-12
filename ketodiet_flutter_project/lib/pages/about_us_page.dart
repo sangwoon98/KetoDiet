@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../modules/app_bar.dart';
 
 class AboutUsPage extends StatefulWidget {
-  final Map<String, String>? params;
+  final Map<String, dynamic> params;
 
-  const AboutUsPage({super.key, this.params});
+  const AboutUsPage(this.params, {super.key});
 
   @override
   State<AboutUsPage> createState() => _AboutUsPageState();
@@ -14,7 +14,7 @@ class AboutUsPage extends StatefulWidget {
 class _AboutUsPageState extends State<AboutUsPage> {
   @override
   Widget build(BuildContext context) {
-    if (widget.params != null) {
+    if (widget.params.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
         Navigator.pushReplacementNamed(context, '/about-us');
       });

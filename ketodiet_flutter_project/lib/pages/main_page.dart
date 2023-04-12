@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../modules/app_bar.dart';
 
 class MainPage extends StatefulWidget {
-  final Map<String, String>? params;
+  final Map<String, dynamic> params;
 
-  const MainPage({super.key, this.params});
+  const MainPage(this.params, {super.key});
 
   @override
   State<MainPage> createState() => _MainPageState();
@@ -14,7 +14,7 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
-    if (widget.params != null) {
+    if (widget.params.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
         Navigator.pushReplacementNamed(context, '/');
       });
@@ -23,7 +23,7 @@ class _MainPageState extends State<MainPage> {
     return Scaffold(
       appBar: CustomAppBar.widget(context),
       body: const Center(
-        child: Text('MainPage'),
+        child: Text('메인 페이지'),
       ),
     );
   }

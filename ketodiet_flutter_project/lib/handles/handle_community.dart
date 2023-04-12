@@ -6,188 +6,93 @@ import 'package:http/http.dart' as http;
 import '../secret.dart';
 import '../modules/handle.dart';
 
-class CommunityForum {
-  CommunityPost? post;
-  List<CommunityPost>? postList;
-  List<CommunityComment>? commentList;
-
-  CommunityForum({this.post, this.postList, this.commentList});
-
-  static Future<dynamic> get(BuildContext context, Map<String, String>? params, {CommunityForum? forum}) async {
-    if (params == null) {
-      List<CommunityPost> postList = await HandleCommunity.getPostList(context, 1);
-
-      return CommunityForum(postList: postList);
-    } else if (params.length == 2 && params.containsKey('search') && params.containsKey('keyword')) {
-      // 검색
-    } else if (params.length == 1 && params.containsKey('page')) {
-      List<CommunityPost>? postList = await HandleCommunity.getPostList(context, int.parse(params['page']!));
-
-      if (postList is! CommunityPost) return false;
-
-      return CommunityForum(postList: postList);
-    } else if (params.length == 1 && params.containsKey('post')) {
-      CommunityPost? post = await HandleCommunity.getPost(context, int.parse(params['post']!));
-
-      if (post is! CommunityPost) return false;
-    } else {
-      return false;
-    }
-  }
-}
-
 class CommunityPost {
-  final int postNum;
-  final DateTime createDate;
-  final DateTime? updateDate;
-  final String category;
-  final String title;
-  final String? content;
-  final String name;
-  final int hit;
-  final int recommend;
-  final int comment;
+  int postNum, hit, recommend, commentCount;
+  String category, title, name;
+  DateTime createDate; // "2022-03-20T10:30:00Z"
 
   CommunityPost(
-    this.postNum,
-    this.createDate,
-    this.updateDate,
-    this.category,
-    this.title,
-    this.content,
-    this.name,
-    this.hit,
-    this.recommend,
-    this.comment,
-  );
+      this.postNum, this.category, this.title, this.name, this.createDate, this.hit, this.recommend, this.commentCount);
 }
 
-class CommunityComment {}
+class CommunityPostList {
+  List<CommunityPost>? list;
+  int pageNum;
+  String? category, target, keyword;
+
+  CommunityPostList(this.pageNum, {this.category, this.target, this.keyword, this.list}) {
+    list ??= [];
+  }
+
+  static Map<String, dynamic> initQuery(CommunityPostList communityPostList) {
+    Map<String, dynamic> query = {'page': communityPostList.pageNum};
+    if (communityPostList.category is String) query['category'] = communityPostList.category;
+    if (communityPostList.target is String) query['target'] = communityPostList.target;
+    if (communityPostList.keyword is String) query['keyword'] = communityPostList.keyword;
+
+    return query;
+  }
+}
 
 class HandleCommunity {
-  static Future<List<CommunityPost>> getPostList(BuildContext context, int pageNum) async {
-    List<CommunityPost> postList = [];
+  static Future<CommunityPostList> getPostList(BuildContext context, CommunityPostList postList) async {
+    Map<String, dynamic> query = CommunityPostList.initQuery(postList);
+    print(query);
+    print(Uri.http(backendDomain, '/api/community', query));
+    http.Response response = await http.get(
+      Uri.http(backendDomain, '/api/community', query),
+    );
 
-    http.Response response = await http.get(Uri.http(backendDomain, '/api/community', {'page': pageNum}));
-
-    if (response.statusCode == 200) {
-      //
-    } else if (response.statusCode == 404) {
-      //
+    if (response.statusCode != 200) {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.getPostList'));
     } else {
-      // 에러
-    }
+      Map jsonData = jsonDecode(response.body)['serializer'];
+      if (jsonData.containsKey('results')) {
+        List<Map<String, dynamic>> results = jsonData['results'];
 
-    // 에러가 있다면 출력
+        for (var element in results) {
+          postList.list!.add(CommunityPost(
+            element['post_num'],
+            element['category'],
+            element['title'],
+            element['name'],
+            DateTime.parse(element['create_date']),
+            element['hit'],
+            element['recommend'],
+            element['comment_count'],
+          ));
+        }
+      } else {
+        if (context.mounted) {
+          await showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: const Text('페이지가 존재하지 않습니다.'),
+                content: const Text('검색 결과가 존재 하지 않거나 해당 페이지가 존재하지 않습니다.'),
+                actions: [
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                        Navigator.pushReplacementNamed(context, '/community');
+                      });
+                    },
+                    child: const Text('확인'),
+                  ),
+                ],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.0),
+                ),
+              );
+            },
+            barrierDismissible: false,
+          );
+        }
+      }
+    }
 
     return postList;
-  }
-
-  static Future<CommunityPost?> getPost(BuildContext context, int postNum) async {
-    CommunityPost? post;
-
-    http.Response response = await http.get(Uri.http(backendDomain, '/api/community', {'post_num': postNum}));
-
-    if (response.statusCode == 200) {
-      //
-    } else if (response.statusCode == 404) {
-      //
-    } else {
-      // 에러
-    }
-
-    // 에러가 있다면 출력
-
-    return post;
-  }
-
-  static Future<CommunityPost?> postPost(BuildContext context, String body) async {
-    CommunityPost? post;
-
-    http.Response response = await http.post(
-      Uri.http(backendDomain, '/api/community'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
-      },
-      body: jsonEncode(body),
-    );
-
-    if (response.statusCode == 201) {
-      //
-    } else if (response.statusCode == 403) {
-      //
-    } else {
-      // 에러
-    }
-
-    // 에러가 있다면 출력
-
-    return post;
-  }
-
-  static Future<CommunityPost?> patchPost(BuildContext context, int postNum, String body) async {
-    CommunityPost? post;
-
-    http.Response response = await http.patch(
-      Uri.http(backendDomain, '/api/community', {'post_num': postNum}),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
-      },
-      body: jsonEncode(body),
-    );
-
-    if (response.statusCode == 200) {
-      //
-    } else if (response.statusCode == 403) {
-      //
-    } else {
-      // 에러
-    }
-
-    // 에러가 있다면 출력
-
-    return post;
-  }
-
-  static Future<void> deletePost(BuildContext context, int postNum) async {
-    http.Response response = await http.delete(
-      Uri.http(backendDomain, '/api/community', {'post_num': postNum}),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      //
-    } else if (response.statusCode == 403) {
-      //
-    } else {
-      // 에러
-    }
-
-    // 에러가 있다면 출력
-  }
-
-  static Future<List<CommunityComment>> getCommentList(BuildContext context, int postNum) async {
-    return [];
-  }
-
-  static Future<List<CommunityComment>> postComment(BuildContext context, int postNum, String body) async {
-    return [];
-  }
-
-  static Future<List<CommunityComment>> patchComment(
-      BuildContext context, int postNum, int commentNum, String body) async {
-    return [];
-  }
-
-  static Future<List<CommunityComment>> deleteComment(BuildContext context, int postNum, int commentNum) async {
-    return [];
   }
 }
