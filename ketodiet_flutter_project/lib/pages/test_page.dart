@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../modules/app_bar.dart';
+import '../modules/handle.dart';
 
 class TestPage extends StatefulWidget {
   const TestPage({super.key});
@@ -13,12 +14,16 @@ class _TestPageState extends State<TestPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: appBar(context),
+      appBar: CustomAppBar.widget(context),
       body: SizedBox(
         width: double.infinity,
         child: SingleChildScrollView(
           child: Column(
-            children: const [],
+            children: [
+              testModule(oAuthTokenText()),
+              testModule(nameText()),
+              testModule(errors()),
+            ],
           ),
         ),
       ),
@@ -34,4 +39,37 @@ Widget testModule(widget) {
       child: widget,
     ),
   );
+}
+
+Widget oAuthTokenText() {
+  return StreamBuilder(
+    stream: accountManager.oAuthTokenStreamController.stream,
+    builder: (context, snapshot) {
+      return Text('OAuthToken is:\n${accountManager.get().oAuthToken}');
+    },
+  );
+}
+
+Widget nameText() {
+  return StreamBuilder(
+    stream: accountManager.nameStreamController.stream,
+    builder: (context, snapshot) {
+      return Text('Name is: ${accountManager.get().name}');
+    },
+  );
+}
+
+Widget errors() {
+  return StreamBuilder(
+      stream: errorManager.streamController.stream,
+      builder: (context, snapshot) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(errorManager.get()?.error is String ? errorManager.get()!.error : 'null'),
+            Text(errorManager.get()?.file is String ? errorManager.get()!.file : 'null'),
+            Text(errorManager.get()?.method is String ? errorManager.get()!.method : 'null'),
+          ],
+        );
+      });
 }

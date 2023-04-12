@@ -13,7 +13,7 @@ class _AboutUsPageState extends State<AboutUsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: appBar(context),
+      appBar: CustomAppBar.widget(context),
       body: const Center(
         child: Text('우리는 누구인가요?'),
       ),

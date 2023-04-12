@@ -13,7 +13,7 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: appBar(context),
+      appBar: CustomAppBar.widget(context),
       body: const Center(
         child: Text('MainPage'),
       ),

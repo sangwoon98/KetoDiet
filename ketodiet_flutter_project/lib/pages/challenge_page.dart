@@ -13,7 +13,7 @@ class _ChallengePageState extends State<ChallengePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: appBar(context),
+      appBar: CustomAppBar.widget(context),
       body: const Center(
         child: Text('키토 챌린지'),
       ),
