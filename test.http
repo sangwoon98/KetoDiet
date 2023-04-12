@@ -1,0 +1,30 @@
+@host = http://localhost:8001
+
+### 게시글 작성 ###
+POST {{host}}/community/
+Content-Type: application/json
+
+{
+    "name": "John",
+    "title": "Hello, world!",
+    "content": "This is a test post.",
+    "category": "Test"
+}
+
+### 게시글 목록 조회 ###
+GET {{host}}/api/community/?page=1
+
+### 게시글 상세 조회 ###
+GET {{host}}/api/community/?post_num=1
+
+### 게시글 수정 ###
+PATCH {{host}}/api/community/?post_num=1
+Content-Type: application/json
+
+{
+    "title": "Updated post",
+    "content": "This post has been updated."
+}
+
+### 게시글 삭제 ###
+DELETE {{host}}/community/?post_num=1
