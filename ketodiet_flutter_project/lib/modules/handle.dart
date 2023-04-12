@@ -1,2 +1,4 @@
-export '../modules/handle_account.dart';
-export '../modules/handle_error.dart';
+export '../handles/handle_account.dart';
+export '../handles/handle_community.dart';
+export '../handles/handle_error.dart';
+export '../handles/handle_route.dart';

@@ -4,7 +4,9 @@ import '../modules/app_bar.dart';
 import '../modules/handle.dart';
 
 class TestPage extends StatefulWidget {
-  const TestPage({super.key});
+  final Map<String, String>? params;
+
+  const TestPage({super.key, this.params});
 
   @override
   State<TestPage> createState() => _TestPageState();
@@ -13,6 +15,12 @@ class TestPage extends StatefulWidget {
 class _TestPageState extends State<TestPage> {
   @override
   Widget build(BuildContext context) {
+    if (widget.params != null) {
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+        Navigator.pushReplacementNamed(context, '/test');
+      });
+    }
+
     return Scaffold(
       appBar: CustomAppBar.widget(context),
       body: SizedBox(

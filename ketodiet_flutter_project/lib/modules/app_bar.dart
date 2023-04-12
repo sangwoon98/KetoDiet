@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../modules/handle.dart';
 
+import '../pages/main_page.dart';
+
 class CustomAppBar {
   static AppBar widget(BuildContext context) {
     return AppBar(

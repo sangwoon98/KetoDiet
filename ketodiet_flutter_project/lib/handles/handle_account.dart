@@ -188,6 +188,22 @@ class HandleAccount {
   }
 
   static Future<void> delete(BuildContext context) async {
+    http.Response response = await http.delete(
+      Uri.http(backendDomain, '/api/account'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_account.dart', 'HandleAccount.delete'));
+    }
+
+    if (context.mounted) await HandleError.ifErroredPushError(context);
+
     accountManager.clear();
     if (await AuthApi.instance.hasToken()) {
       try {
@@ -435,3 +451,5 @@ class SetNameWidget {
     );
   }
 }
+
+// TODO: post, patch 텍스트필드 컨트롤러 손보기

@@ -4,21 +4,6 @@ import 'package:url_strategy/url_strategy.dart'; // URL Path에 '#' 없애는 Pa
 
 import 'secret.dart';
 import 'modules/handle.dart';
-import 'pages/about_us_page.dart';
-import 'pages/challenge_page.dart';
-import 'pages/community_page.dart';
-import 'pages/info_page.dart';
-import 'pages/main_page.dart';
-import 'pages/test_page.dart';
-
-final routes = {
-  '/': const MainPage(),
-  '/about-us': const AboutUsPage(),
-  '/info': const InfoPage(),
-  '/community': const CommunityPage(),
-  '/challenge': const ChallengePage(),
-  '/test': const TestPage(),
-};
 
 void main() async {
   setPathUrlStrategy(); // URL Path에 '#' 없애는 Function
@@ -40,19 +25,7 @@ class MyApp extends StatelessWidget {
     HandleAccount.init();
 
     return MaterialApp(
-      onGenerateRoute: (settings) {
-        if (routes.containsKey(settings.name)) {
-          return PageRouteBuilder(
-            settings: RouteSettings(
-              name: settings.name,
-              arguments: settings.arguments,
-            ),
-            pageBuilder: (_, __, ___) => routes[settings.name]!,
-          );
-        }
-
-        return null;
-      },
+      onGenerateRoute: (settings) => HandleRoute.onGenerateRoute(settings),
       title: 'KetoDiet',
       theme: ThemeData(
         primarySwatch: Colors.green,
