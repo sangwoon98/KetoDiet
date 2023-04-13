@@ -24,7 +24,6 @@ class CommunitycommentDB(models.Model):
     id = models.CharField(max_length=30)
     name=models.CharField(max_length=15)
     content=models.CharField(max_length=300)
-    comment_count=models.IntegerField(default=0)
     create_date= models.DateTimeField(default=timezone.now)
     
     def __str__(self):
