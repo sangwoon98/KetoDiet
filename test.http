@@ -28,3 +28,7 @@ Content-Type: application/json
 
 ### 게시글 삭제 ###
 DELETE {{host}}/community/?post_num=1
+
+
+### 댓글 조회 ###
+GET {{host}}/api/community/comment?post_num=1&page=1
