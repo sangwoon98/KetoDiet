@@ -16,7 +16,8 @@ class HandleRoute {
     uri = settings.name!.split('?');
     path = uri.first;
     params = uri.first == uri.last ? {} : Uri.splitQueryString(uri.last);
-    if (settings.arguments != null) params['additional'] = settings.arguments;
+    settings = RouteSettings(name: settings.name, arguments: params);
+    // if (settings.arguments != null) params['additional'] = settings.arguments;
 
     final Map<String, Widget> routes = {
       '/': MainPage(params),

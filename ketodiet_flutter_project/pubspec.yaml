@@ -39,6 +39,7 @@ dependencies:
   flutter_dotenv: ^5.0.2
   http: ^0.13.5
   url_strategy: ^0.2.0
+  intl: ^0.18.0
 
 dev_dependencies:
   flutter_test:
