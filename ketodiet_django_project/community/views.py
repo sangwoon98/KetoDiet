@@ -1,3 +1,4 @@
+from http.client import BAD_REQUEST
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -14,11 +15,6 @@ from .models import CommunityDB, CommunitycommentDB
 from rest_framework import serializers
 from user.views import AccountView
 
-
-class CommentDBSerializer(serializers.ModelSerializer): 
-    class Meta:
-        model = CommunitycommentDB
-        fields = '__all__' # 모든값들을 직렬화 시킴
 
 
 # DB 모델 인스턴스나 QuerySet 데이터를 JSON으로 반환 , 출력값: fields로 고정, data={'name':name}형태로 삽입후 직렬화 가능,
@@ -75,9 +71,9 @@ class CommunityView(APIView):
         else:
             post_num = request.query_params.get('post_num')
             try: 
-                    qs = CommunityDB.objects.get(post_num=post_num)
-                    community_serializer = CommunityDBSerializer(qs)
-                    return Response(community_serializer.data, status=status.HTTP_200_OK) 
+                qs = CommunityDB.objects.get(post_num=post_num)
+                community_serializer = CommunityDBSerializer(qs)
+                return Response(community_serializer.data, status=status.HTTP_200_OK) 
             except: 
                 return Response(status=status.HTTP_400_BAD_REQUEST) # post_num값이 잘못됨
            
@@ -85,21 +81,17 @@ class CommunityView(APIView):
     def post(self, request):
         id = AccountView.access_token_to_id
         try:
-            qs=UserDB.objects.get(id=id)
-            userDB_name=qs.name
-        except:
-            qs=None ######### 여기서 이름 확인을 왜 하는거임..? 본인계정 이름 넣으면 되지그냥
-        
-        if (qs) and (userDB_name==request.data.get('name')):
-            data = self.body_get_multy_value(request, ['name', 'title', 'content','category'])
-            serializer = CommunityDBSerializer(data={'id':id, 'name': data[0], 'title': data[1], 'content': data[2], 'category':data[3]}) 
+            name= UserDB.objects.get(id=id).name
+            data = self.body_get_multy_value(request, ['title', 'content','category'])
+            serializer = CommunityDBSerializer(data={'id':id, 'name': name, 'title': data[0], 'content': data[1], 'category':data[2]}) 
             if serializer.is_valid():
                 serializer.save()
                 return Response(status=status.HTTP_201_CREATED)
             else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) # 입력값 오류
+        except:
+            return Response(status=status.HTTP_403_FORBIDDEN) # 알수 없는 사용자
+            
 
     def patch(self, request):
         id = AccountView.access_token_to_id
@@ -122,41 +114,137 @@ class CommunityView(APIView):
     def delete(self, request):
         id = AccountView.access_token_to_id
         post_num = request.query_params.get('post_num')
-        community = CommunityDB.objects.get(post_num)
-        if community.id == id:
-            try:
+        try:
+            community = CommunityDB.objects.get(post_num)
+            if community.id == id:
                 community.delete()
-            except :
-                return Response(status= status.HTTP_400_BAD_REQUEST)
-            return Response(status=status.HTTP_200_OK)
-        else:
-            if UserDB.objects.get(id).isAdmin == True:
-                community.delete()
-                return Response(status= status.HTTP_200_OK)
+                return Response(status=status.HTTP_200_OK)
             else:
-                return Response(status=status.HTTP_403_FORBIDDEN) # 권한 없음
+                if UserDB.objects.get(id).isAdmin == True:
+                    community.delete()
+                    return Response(status= status.HTTP_200_OK)
+                else:
+                    return Response(status=status.HTTP_403_FORBIDDEN) # 권한 없음
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+            
+            
+            
+class CommentDBSerializer(serializers.ModelSerializer): 
+    class Meta:
+        model = CommunitycommentDB
+        fields = '__all__' # 모든값들을 직렬화 시킴
+        
+class Comment_notall_DBSerializer(serializers.ModelSerializer): 
+    class Meta:
+        model = CommunitycommentDB
+        fields = 'comment_num','name','content','create_date' # 모든값들을 직렬화 시킴
+        
+class CommentListPagination(pagination.PageNumberPagination): # DRF에서 제공하는 pagination을 상속
+    page_size = 20
+        
+from rest_framework import generics
+
+class CommunityCommentList(generics.ListAPIView):
+    serializer_class = Comment_notall_DBSerializer
+    pagination_class = CommentListPagination
+
+    def get_queryset(self):
+        post_num = self.request.GET.get('post_num')
+        if not post_num:
+            # post_num parameter가 전달되지 않으면 400 Bad Request 반환
+            raise BAD_REQUEST('post_num parameter is required')
+        
+        # post_num parameter로 필터링된 댓글들을 comment_num 기준 내림차순으로 정렬하여 반환
+        queryset = CommunitycommentDB.objects.filter(post_num=post_num).order_by('-comment_num')
+        return queryset
+            
             
 class Community_comment(APIView):
     
+    def get(self, request):
+        page = request.query_params.get('page')
+        http_request = HttpRequest()
+        http_request.GET = request.GET
+        http_request.method = 'GET'
+        serializer = CommunityCommentList.as_view()(http_request).data
+        return Response({'serializer':serializer,'page':page}, status=status.HTTP_200_OK)
+        
+        # post_num = request.GET.get('post_num')
+        # page_number = request.GET.get('page')
+        # comments = CommunitycommentDB.objects.filter(post_num=post_num).order_by('-comment_num')
+        # paginator = Paginator(comments, 20)  # 한 페이지에 20개의 댓글
+        # page_obj = paginator.get_page(page_number)
+        # serializer = CommentDBSerializer(page_obj, many=True)
+        # return Response(serializer.data)
+    
     def post(self, request):
         id = AccountView.access_token_to_id
-        if id is not None:
-            try:
-                qs = UserDB.objects.get(id=id)
-                name = qs.name
-                content = request.body.get('content')
-                post_num = request.query_params.get('post_num')
-                serializer = CommentDBSerializer(data={'id':id, 'name':name, 'content':content, 'post_num':post_num})
+        try:
+            qs = UserDB.objects.get(id=id)
+            name = qs.name
+            content = request.body.get('content')
+            post_num = request.query_params.get('post_num')
+            serializer = CommentDBSerializer(data={'id':id, 'name':name, 'content':content, 'post_num':post_num})
+            if serializer.is_valid():
                 serializer.save()
                 com_qs = CommunityDB.objects.get(post_num=post_num)
                 com_qs.comment_count+=1
                 com_qs.save()
-                return Response(status=status.HTTP_201_CREATED)
+                return Response(status=status.HTTP_201_CREATED) #정상
+            else:
+                return Response(status=status.HTTP_400_BAD_REQUEST) # 요청 값 오류   
+        except:
+            return Response(status=status.HTTP_403_FORBIDDEN) # 알수 없는 사용자
+    
+    def patch(self, request):
+        id = AccountView.access_token_to_id
+        if CommunitycommentDB.id == id:
+            try:
+                comment_num = request.query_params.get('comment_num')
+                comment = CommunitycommentDB.objects.get(comment_num)
+                data = {}
+                for key in request.data.keys(): # body의 데이터를 딕셔너리로
+                    data[key] = request.data[key]
+                serializer = CommentDBSerializer(comment, data=data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(status=status.HTTP_200_OK)
+                else:
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
             except:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_403_FORBIDDEN) # 알수 없는 사용자
+            
 
+    def delete(self, request):
+        id = AccountView.access_token_to_id
+        comment_num = request.query_params.get('comment_num')
+        try:
+            comment = CommunitycommentDB.objects.get(comment_num)
+            post_num = comment.post_num
+            if comment.id == id:
+                comment.delete()
+                com_qs = CommunityDB.objects.get(post_num=post_num)
+                com_qs.comment_count-=1
+                com_qs.save()
+                return Response(status=status.HTTP_200_OK)
+            else:
+                if UserDB.objects.get(id).isAdmin == True:
+                    comment.delete()
+                    com_qs = CommunityDB.objects.get(post_num=post_num)
+                    com_qs.comment_count-=1
+                    com_qs.save()
+                    return Response(status= status.HTTP_200_OK)
+                else:
+                    return Response(status=status.HTTP_403_FORBIDDEN) # 권한 없음
+        except:
+            return Response(status= status.HTTP_400_BAD_REQUEST)
+
+
+        
+        
     # def put(self, request, pk):
     #     community = CommunityDB.objects.get(pk=pk)
     #     data = self.body_get_multy_value(request, ['name', 'title', 'content'])
