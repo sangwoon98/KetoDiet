@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:ketodiet_flutter_project/pages/not_found_page.dart';
 
 import '../pages/about_us_page.dart';
 import '../pages/challenge_page.dart';
@@ -8,36 +10,41 @@ import '../pages/main_page.dart';
 import '../pages/test_page.dart';
 
 class HandleRoute {
-  static late List<String> uri;
-  static late String path;
-  static late Map<String, dynamic> params;
+  static Route<dynamic> onGenerateRoute(RouteSettings settings) {
+    List<String> uri = settings.name!.split('?');
+    String path = uri.first;
+    Map<String, dynamic> query = {};
+    if (uri.first == uri.last) {
+      query = {};
+    } else {
+      var splitQueryString = Uri.splitQueryString(uri.last);
 
-  static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
-    uri = settings.name!.split('?');
-    path = uri.first;
-    params = uri.first == uri.last ? {} : Uri.splitQueryString(uri.last);
-    settings = RouteSettings(name: settings.name, arguments: params);
-    // if (settings.arguments != null) params['additional'] = settings.arguments;
-
-    final Map<String, Widget> routes = {
-      '/': MainPage(params),
-      '/about-us': AboutUsPage(params),
-      '/info': InfoPage(params),
-      '/community': CommunityPage(params),
-      '/challenge': ChallengePage(params),
-      '/test': TestPage(params),
-    };
-
-    if (!routes.containsKey(path)) {
-      settings = const RouteSettings(name: '/', arguments: {});
-      path = '/';
+      for (var element in splitQueryString.keys) {
+        query[element] = splitQueryString[element];
+      }
     }
 
-    return PageRouteBuilder(
-      settings: settings,
-      pageBuilder: (_, __, ___) {
-        return routes[path]!;
-      },
-    );
+    // TODO: Build시 삭제
+    if (kDebugMode) {
+      print('URI: $uri\nPATH: $path\nQUERY:$query\nSETTINGS:$settings');
+    }
+
+    switch (path) {
+      case '/':
+        return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => MainPage(query));
+      case '/info':
+        return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => InfoPage(query));
+      case '/about-us':
+        return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => AboutUsPage(query));
+      case '/community':
+        return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => CommunityPage(query));
+      case '/challenge':
+        return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => ChallengePage(query));
+      case '/test':
+        return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => TestPage(query));
+      default:
+        settings = const RouteSettings(name: 'not-found');
+        return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => const NotFoundPage());
+    }
   }
 }

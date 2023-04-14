@@ -7,9 +7,9 @@ import 'package:ketodiet_flutter_project/modules/handle.dart';
 import '../modules/app_bar.dart';
 
 class CommunityPage extends StatefulWidget {
-  final Map<String, dynamic> params;
+  final Map<String, dynamic> query;
 
-  const CommunityPage(this.params, {super.key});
+  const CommunityPage(this.query, {super.key});
 
   @override
   State<CommunityPage> createState() => _CommunityPageState();
@@ -18,74 +18,54 @@ class CommunityPage extends StatefulWidget {
 class _CommunityPageState extends State<CommunityPage> {
   @override
   Widget build(BuildContext context) {
-    Map<String, dynamic> params = widget.params;
-    CommunityPostList query = CommunityPostList(0);
-
-    if (params.isEmpty) {
-      query.pageNum = 1;
-    } else if (params.containsKey('page')) {
-      query.pageNum = int.parse(params['page']);
-      if (params.containsKey('category')) query.category = params['category'];
-      if (params.containsKey('target')) query.target = params['target'];
-      if (params.containsKey('keyword')) query.keyword = params['keyword'];
-      if (params.containsKey('recommend')) query.recommend = true;
-    } else {
-      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        Navigator.pushReplacementNamed(context, '/community?page=1');
-      });
-    }
-
-    if (query.pageNum == 0) {
-      return Scaffold(
-        appBar: CustomAppBar.widget(context),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    } else {
-      return Scaffold(
-        appBar: CustomAppBar.widget(context),
-        body: FutureBuilder(
-          future: HandleCommunity.getPostList(context, query),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return ForumWidget.widget(context, snapshot.data!);
-            } else {
-              return const Center(child: CircularProgressIndicator());
-            }
-          },
-        ),
-      );
-    }
+    return Scaffold(
+      appBar: CustomAppBar.widget(context),
+      body: FutureBuilder(
+        future: CommunityForum.get(context, widget.query),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return ForumWidget.widget(context, snapshot.data!);
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
+    );
   }
 }
 
 class ForumWidget {
-  static Widget widget(BuildContext context, CommunityPostList postList) {
-    List<Widget> listItem = _initListItem(context, postList);
+  static Widget widget(BuildContext context, CommunityForum communityForum) {
+    List<Widget> itemList = _initItem(context, communityForum);
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(200.0, 50.0, 200.0, 100.0),
+      padding: const EdgeInsets.fromLTRB(200.0, 10.0, 200.0, 10.0),
       itemBuilder: (BuildContext context, int index) {
-        return listItem[index];
+        return itemList[index];
       },
-      itemCount: listItem.length,
+      itemCount: itemList.length,
     );
   }
 
-  static List<Widget> _initListItem(BuildContext context, CommunityPostList postList) {
+  static List<Widget> _initItem(BuildContext context, CommunityForum communityForum) {
     List<Widget> list = [];
 
-    list.addAll(PostListWidget.widgetList(context, postList));
+    list.addAll(PostListWidget.widget(context, communityForum.communityPostList));
 
     return list;
   }
 }
 
-class PostWidget {}
+class PostWidget {
+  static Widget widget() {
+    return const SizedBox();
+  }
+}
 
 class CommentWidget {}
 
 class PostListWidget {
-  static List<Widget> widgetList(BuildContext context, CommunityPostList postList) {
+  static List<Widget> widget(BuildContext context, CommunityPostList postList) {
     List<Widget> list = [];
 
     list.add(_menu(context, postList));
@@ -139,7 +119,7 @@ class PostListWidget {
       height: 40.0,
       child: ElevatedButton(
           onPressed: () {
-            Navigator.pushReplacementNamed(context, '/community?page=1');
+            Navigator.pushNamedAndRemoveUntil(context, '/community', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(postList.recommend == null ? Colors.white : Colors.black),
@@ -169,7 +149,7 @@ class PostListWidget {
       height: 40.0,
       child: ElevatedButton(
           onPressed: () {
-            Navigator.pushReplacementNamed(context, '/community?page=1&recommend=true');
+            Navigator.pushNamedAndRemoveUntil(context, '/community?page=1&recommend=true', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(postList.recommend == true ? Colors.white : Colors.black),
@@ -282,7 +262,7 @@ class PostListWidget {
                       String query = 'page=1&target=$target&keyword=$keyword';
                       if (postList.recommend == true) query = '$query&recommend=true';
 
-                      Navigator.pushReplacementNamed(context, '/community?$query');
+                      Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
                     } else {
                       await showDialog(
                         context: context,
@@ -321,7 +301,7 @@ class PostListWidget {
                     String query = 'page=1&target=$target&keyword=$keyword';
                     if (postList.recommend == true) query = '$query&recommend=true';
 
-                    Navigator.pushReplacementNamed(context, '/community?$query');
+                    Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
                   } else {
                     await showDialog(
                       context: context,
@@ -368,7 +348,7 @@ class PostListWidget {
   static Widget _postButton() {
     return ElevatedButton(
       onPressed: () {
-        // TODO: 글쓰기
+        // TODO: POST post
       },
       style: ElevatedButton.styleFrom(
         fixedSize: const Size(80.0, 40.0),
@@ -389,24 +369,24 @@ class PostListWidget {
     if (postList.list == null) {
       list.add(Column(
         children: [
-          const SizedBox(height: 10.0),
+          const SizedBox(height: 30.0),
           const Text('글이 존재하지 않습니다.'),
-          const SizedBox(height: 10.0),
+          const SizedBox(height: 30.0),
           Container(width: 1040.0, height: 1.0, color: Colors.grey),
         ],
       ));
     } else if (postList.list!.isEmpty) {
       list.add(Column(
         children: [
-          const SizedBox(height: 10.0),
+          const SizedBox(height: 30.0),
           const Text('글이 존재하지 않습니다.'),
-          const SizedBox(height: 10.0),
+          const SizedBox(height: 30.0),
           Container(width: 1040.0, height: 1.0, color: Colors.grey),
         ],
       ));
     } else {
       for (var element in postList.list!) {
-        list.add(_postRow(element));
+        list.add(_postRow(context, postList, element));
       }
     }
     list.add(Container(width: 1040.0, height: 1.0, color: Colors.grey));
@@ -446,7 +426,7 @@ class PostListWidget {
           if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
           if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-          Navigator.pushReplacementNamed(context, '/community?$query');
+          Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
         },
         style: ButtonStyle(
           foregroundColor: MaterialStateProperty.all(postList.category == null ? Colors.white : Colors.black),
@@ -475,7 +455,7 @@ class PostListWidget {
         if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
         if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-        Navigator.pushReplacementNamed(context, '/community?$query');
+        Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
       },
       style: ButtonStyle(
         foregroundColor: MaterialStateProperty.all(postList.category == category ? Colors.white : Colors.black),
@@ -515,8 +495,8 @@ class PostListWidget {
     );
   }
 
-  static Widget _postRow(CommunityPost communityPost) {
-    DateTime createDate = communityPost.createDate;
+  static Widget _postRow(BuildContext context, CommunityPostList postList, CommunityPost post) {
+    DateTime createDate = post.createDate;
     late String createDateString;
 
     if (createDate.difference(DateTime.now()).inHours > -24) {
@@ -525,24 +505,31 @@ class PostListWidget {
       createDateString = DateFormat('yyyy-MM-dd').format(createDate);
     }
 
-    return Column(
-      children: [
-        const SizedBox(height: 10.0),
-        Row(
-          children: [
-            _expanded(Text(communityPost.postNum.toString(), textAlign: TextAlign.center)),
-            // TODO: TITLE 클릭 시 글로 이동
-            _expanded(Text(communityPost.title), 6),
-            // TODO: NAME 클릭 시 글쓴이 검색으로 이동
-            _expanded(Text(communityPost.name), 2),
-            _expanded(Text(createDateString, textAlign: TextAlign.center)),
-            _expanded(Text(communityPost.hit.toString(), textAlign: TextAlign.center)),
-            _expanded(Text(communityPost.recommend.toString(), textAlign: TextAlign.center)),
-          ],
-        ),
-        const SizedBox(height: 10.0),
-        Container(width: 1040.0, height: 1.0, color: Colors.grey),
-      ],
+    return TextButton(
+      onPressed: () {
+        // TODO: GET post
+      },
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.black,
+        padding: EdgeInsets.zero,
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 10.0),
+          Row(
+            children: [
+              _expanded(Text(post.postNum.toString(), textAlign: TextAlign.center)),
+              _expanded(Text(post.title), 6),
+              _expanded(Text(post.name), 2),
+              _expanded(Text(createDateString, textAlign: TextAlign.center)),
+              _expanded(Text(post.hit.toString(), textAlign: TextAlign.center)),
+              _expanded(Text(post.recommend.toString(), textAlign: TextAlign.center)),
+            ],
+          ),
+          const SizedBox(height: 10.0),
+          Container(width: 1040.0, height: 1.0, color: Colors.grey),
+        ],
+      ),
     );
   }
 
@@ -606,13 +593,13 @@ class PostListWidget {
         height: 30.0,
         child: ElevatedButton(
           onPressed: () {
-            String query = 'page=${postList.pageNum.toString()}';
+            String query = 'page=${pageNum.toString()}';
             if (postList.category is String) query = '$query&category=${Uri.encodeComponent(postList.category!)}';
             if (postList.target is String) query = '$query&target=${postList.target}';
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
             if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-            Navigator.pushReplacementNamed(context, '/community?$query');
+            Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(postList.pageNum == pageNum ? Colors.white : Colors.black),
@@ -645,7 +632,7 @@ class PostListWidget {
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
             if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-            Navigator.pushReplacementNamed(context, '/community?$query');
+            Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(Colors.black),
@@ -678,7 +665,7 @@ class PostListWidget {
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
             if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-            Navigator.pushReplacementNamed(context, '/community?$query');
+            Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(Colors.black),
@@ -718,7 +705,7 @@ class PostListWidget {
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
             if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-            Navigator.pushReplacementNamed(context, '/community?$query');
+            Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(Colors.black),
@@ -758,7 +745,7 @@ class PostListWidget {
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
             if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-            Navigator.pushReplacementNamed(context, '/community?$query');
+            Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(Colors.black),
