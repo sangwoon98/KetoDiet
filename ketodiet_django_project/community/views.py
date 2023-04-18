@@ -137,7 +137,7 @@ class CommunityView(APIView):
                 http_request.GET['page'] = 1
                 list_serializer = CommunityList.as_view()(http_request).data # list 가져다줄때 해당 목록만 가져다줌
             
-                return Response({'page_number':1, 'category':categories, 'post':{"detail": "Invalid page."},'comment':{"detail": "Invalid page."}, 'page':list_serializer})
+                return Response({'page_number':1, 'category':categories, 'post':{"detail": "Invalid page."},'comment':[], 'page':list_serializer})
             
             
             
@@ -161,6 +161,7 @@ class CommunityView(APIView):
                 import math
                 all_list=CommunitycommentDB.objects.filter(post_num=post_num)
                 comment_page=math.ceil(len(all_list)/20)
+                print('comment_page: ',comment_page)
                 http_request.GET['page'] = comment_page
                 http_request.GET['post_num'] = post_num
                 comment_serializer = CommunityCommentList.as_view()(http_request).data
@@ -171,7 +172,7 @@ class CommunityView(APIView):
            
 
     def post(self, request):
-        id = AccountView.access_token_to_id
+        id = AccountView.access_token_to_id(request)
         try:
             name= UserDB.objects.get(id=id).name   
         except:
@@ -179,17 +180,18 @@ class CommunityView(APIView):
             
         data = self.body_get_multy_value(request, ['title', 'content','category'])
         serializer = CommunityDBSerializer(data={'id':id, 'name': name, 'title': data[0], 'content': data[1], 'category':data[2]}) 
+        print('1')
         if serializer.is_valid():
             serializer.save()
             #post_num , 생성날짜 똑같이맞춰주고, 글조회시 커맨트가 없으면 빈리스트
-            return Response(status=status.HTTP_201_CREATED)
+            return Response({'post_number':serializer.instance.post_num},status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) # 입력값 오류
 
 
     def patch(self, request):
         try:
-            id = AccountView.access_token_to_id
+            id = AccountView.access_token_to_id(request)
             post_num = request.query_params.get('post_num')
             community = CommunityDB.objects.get(post_num=post_num)
         except:
@@ -199,6 +201,7 @@ class CommunityView(APIView):
             data = {}
             for key in request.data.keys():
                 data[key] = request.data[key]
+            print(data)
             serializer = CommunityDBSerializer(community, data=data, partial=True) # 수정일 문제 해결
             if serializer.is_valid():
                 serializer.save()
@@ -210,7 +213,7 @@ class CommunityView(APIView):
 
 
     def delete(self, request):
-        id = AccountView.access_token_to_id
+        id = AccountView.access_token_to_id(request)
         post_num = request.query_params.get('post_num')
         try:
             community = CommunityDB.objects.get(post_num=post_num)
@@ -282,7 +285,7 @@ class Community_comment(APIView):
         return Response({'comment':serializer}, status=status.HTTP_200_OK)
     
     def post(self, request):
-        id = AccountView.access_token_to_id
+        id = AccountView.access_token_to_id(request)
         try:
             qs = UserDB.objects.get(id=id)
             name = qs.name
@@ -301,7 +304,7 @@ class Community_comment(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN) # 알수 없는 사용자
     
     def patch(self, request):
-        id = AccountView.access_token_to_id
+        id = AccountView.access_token_to_id(request)
         if CommunitycommentDB.id == id:
             try:
                 comment_num = request.query_params.get('comment_num')
@@ -322,7 +325,7 @@ class Community_comment(APIView):
             
 
     def delete(self, request):
-        id = AccountView.access_token_to_id
+        id = AccountView.access_token_to_id(request)
         comment_num = request.query_params.get('comment_num')
         try:
             comment = CommunitycommentDB.objects.get(comment_num=comment_num)
@@ -358,7 +361,7 @@ class Category(APIView):
         return Response({'categories': categories})
     
     def post(self, request):
-        id = AccountView.access_token_to_id
+        id = AccountView.access_token_to_id(request)
         try:
             isAdmin = UserDB.objects.get(id=id).isAdmin
             if isAdmin:
@@ -376,7 +379,7 @@ class Category(APIView):
             return Response({'success': False, 'message': 'User does not exist'})
     
     def patch(self, request):
-        id = AccountView.access_token_to_id
+        id = AccountView.access_token_to_id(request)
         try:
             isAdmin = UserDB.objects.get(id=id).isAdmin
             if isAdmin:
@@ -396,7 +399,7 @@ class Category(APIView):
             return Response(status= status.HTTP_404_NOT_FOUND)
         
     def delete(self, request):
-        id = AccountView.access_token_to_id
+        id = AccountView.access_token_to_id(request)
         try:
             isAdmin = UserDB.objects.get(id=id).isAdmin
             if isAdmin:
@@ -421,7 +424,7 @@ class Recommend(APIView):
         return Response({'recommend': recommend})
     
     def post(self, request):
-        user_id = 5
+        user_id = AccountView.access_token_to_id(request)
         if user_id:
             post_num = request.query_params.get('post_num')
             community = CommunityDB.objects.get(post_num=post_num)
@@ -437,7 +440,7 @@ class Recommend(APIView):
 
         
     def delete(self, request):
-        user_id = AccountView.access_token_to_id
+        user_id = AccountView.access_token_to_id(request)
         if user_id:
             post_num = request.query_params.get('post_num')
             community = CommunityDB.objects.get(post_num=post_num)
