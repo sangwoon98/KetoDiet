@@ -23,6 +23,9 @@ class HandleRoute {
         query[element] = splitQueryString[element];
       }
     }
+    if (settings.arguments != null) {
+      query['additional'] = settings.arguments;
+    }
 
     // TODO: Build시 삭제
     if (kDebugMode) {

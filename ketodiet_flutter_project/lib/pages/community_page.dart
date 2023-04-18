@@ -66,9 +66,9 @@ class PostWidget {
     List<Widget> children;
 
     if (communityCommentList == null) {
-      children = [_post(communityPost)];
+      children = [_post(context, communityPost)];
     } else {
-      children = [_post(communityPost), _comment(communityCommentList)];
+      children = [_post(context, communityPost), _commentList(communityCommentList)];
     }
 
     return [
@@ -84,7 +84,7 @@ class PostWidget {
     ];
   }
 
-  static Widget _post(CommunityPost communityPost) {
+  static Widget _post(BuildContext context, CommunityPost communityPost) {
     if (communityPost.title == null) {
       return Column(
         children: const [
@@ -94,6 +94,53 @@ class PostWidget {
             textAlign: TextAlign.start,
           ),
           SizedBox(height: 200.0),
+        ],
+      );
+    }
+
+    Widget modifyOption = const SizedBox();
+
+    if (accountManager.accountArguments.name == communityPost.name || accountManager.accountArguments.isAdmin == true) {
+      modifyOption = Row(
+        children: [
+          const SizedBox(width: 10.0),
+          Container(color: Colors.black, width: 1.0, height: 14.0),
+          TextButton(
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+            ),
+            onPressed: () {
+              WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/community/post',
+                  (_) => false,
+                  arguments: {
+                    'postNum': communityPost.postNum,
+                    'category': communityPost.category,
+                    'title': communityPost.title,
+                    'content': communityPost.content,
+                  },
+                );
+              });
+            },
+            child: const Text('수정'),
+          ),
+          Container(color: Colors.black, width: 1.0, height: 14.0),
+          TextButton(
+            onPressed: () async {
+              bool success = await HandleCommunity.deletePost(context, communityPost.postNum);
+              if (success) {
+                WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                  Navigator.pushNamedAndRemoveUntil(context, '/community', (_) => false);
+                });
+              }
+            },
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+            ),
+            child: const Text('삭제'),
+          ),
         ],
       );
     }
@@ -135,25 +182,29 @@ class PostWidget {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 5.0),
-          child: Row(
-            children: [
-              const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.person, size: 14.0)),
-              Text(communityPost.name!),
-              const Expanded(child: SizedBox()),
-              const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.remove_red_eye, size: 14.0)),
-              Text(communityPost.hit.toString()),
-              const SizedBox(width: 10.0),
-              const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.recommend, size: 14.0)),
-              Text(communityPost.recommend.toString()),
-              const SizedBox(width: 10.0),
-              const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.comment, size: 14.0)),
-              Text(communityPost.commentCount.toString()),
-              const SizedBox(width: 10.0),
-              const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.date_range, size: 14.0)),
-              Text(communityPost.createDate == communityPost.updateDate
-                  ? DateFormat('yyyy-MM-dd HH:mm:ss').format(communityPost.createDate!)
-                  : '${DateFormat('yyyy-MM-dd HH:mm:ss').format(communityPost.updateDate!)} (수정됨)'),
-            ],
+          child: SizedBox(
+            height: 18.0,
+            child: Row(
+              children: [
+                const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.person, size: 14.0)),
+                Text(communityPost.name!),
+                const Expanded(child: SizedBox()),
+                const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.remove_red_eye, size: 14.0)),
+                Text(communityPost.hit.toString()),
+                const SizedBox(width: 10.0),
+                const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.recommend, size: 14.0)),
+                Text(communityPost.recommend.toString()),
+                const SizedBox(width: 10.0),
+                const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.comment, size: 14.0)),
+                Text(communityPost.commentCount.toString()),
+                const SizedBox(width: 10.0),
+                const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.date_range, size: 14.0)),
+                Text(communityPost.createDate == communityPost.updateDate
+                    ? DateFormat('yyyy-MM-dd HH:mm:ss').format(communityPost.createDate!)
+                    : '${DateFormat('yyyy-MM-dd HH:mm:ss').format(communityPost.updateDate!)} (수정됨)'),
+                modifyOption,
+              ],
+            ),
           ),
         ),
         Container(width: 1040.0, height: 2.0, color: Colors.grey),
@@ -184,14 +235,15 @@ class PostWidget {
     );
   }
 
-  static Widget _comment(CommunityCommentList communityCommentList) {
+  static Widget _commentList(CommunityCommentList communityCommentList) {
     StreamController<CommunityCommentList> streamController = StreamController<CommunityCommentList>.broadcast();
-    List<Widget> pageButtons = [];
-    List<Widget> commentList = [];
 
     return StreamBuilder<CommunityCommentList>(
       stream: streamController.stream,
       builder: (context, snapshot) {
+        List<Widget> pageButtons = [];
+        List<Widget> commentList = [];
+
         if (!snapshot.hasData) {
           streamController.add(communityCommentList);
         } else {
@@ -370,63 +422,7 @@ class PostWidget {
           }
 
           for (var element in snapshot.data!.list!) {
-            commentList.add(
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10.0, 0.0, 10.0, 10.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey, width: 1, strokeAlign: BorderSide.strokeAlignOutside),
-                    borderRadius: const BorderRadius.all(Radius.circular(10.0)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        decoration: const BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(10.0),
-                            topRight: Radius.circular(10.0),
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(10.0, 2.0, 10.0, 2.0),
-                          child: Row(
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.only(right: 2.0),
-                                child: Icon(Icons.person, size: 14.0, color: Colors.white),
-                              ),
-                              Text(
-                                element.name,
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              const Expanded(child: SizedBox()),
-                              const Padding(
-                                padding: EdgeInsets.only(right: 2.0),
-                                child: Icon(Icons.date_range, size: 14.0, color: Colors.white),
-                              ),
-                              Text(
-                                element.createDate == element.updateDate
-                                    ? DateFormat('yyyy-MM-dd HH:mm:ss').format(element.createDate)
-                                    : '${DateFormat('yyyy-MM-dd HH:mm:ss').format(element.updateDate)} (수정됨)',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(10.0, 2.0, 10.0, 2.0),
-                        child: Text(element.content),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
+            commentList.add(_comment(element, streamController, snapshot.data!));
           }
         }
 
@@ -588,6 +584,238 @@ class PostWidget {
           ],
         );
       },
+    );
+  }
+
+  static Widget _comment(CommunityComment comment, StreamController<CommunityCommentList> commentListStream,
+      CommunityCommentList commentList) {
+    final StreamController<bool?> streamController = StreamController<bool?>.broadcast();
+    return StreamBuilder(
+      stream: streamController.stream,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          if (snapshot.data!) {
+            return _modifyComment(context, comment, streamController, commentListStream, commentList);
+          }
+        }
+
+        Widget modifyOption = const SizedBox();
+
+        if (accountManager.accountArguments.name == comment.name || accountManager.accountArguments.isAdmin == true) {
+          modifyOption = Row(
+            children: [
+              const SizedBox(width: 10.0),
+              Container(color: Colors.white, width: 1.0, height: 14.0),
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                ),
+                onPressed: () {
+                  streamController.add(true);
+                },
+                child: const Text('수정', style: TextStyle(color: Colors.white)),
+              ),
+              Container(color: Colors.white, width: 1.0, height: 14.0),
+              TextButton(
+                onPressed: () async {
+                  bool success = await HandleCommunity.deleteComment(context, comment.commentNum);
+                  if (success && context.mounted) {
+                    commentListStream.add(await HandleCommunity.getCommentList(
+                        context, {'post': commentList.postNum, 'page': commentList.pageNum}));
+                  } else {
+                    if (context.mounted) await HandleError.ifErroredPushError(context);
+                  }
+                },
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                ),
+                child: const Text('삭제', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(10.0, 0.0, 10.0, 10.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey, width: 1, strokeAlign: BorderSide.strokeAlignOutside),
+              borderRadius: const BorderRadius.all(Radius.circular(10.0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(10.0),
+                      topRight: Radius.circular(10.0),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10.0, 2.0, 10.0, 2.0),
+                    child: SizedBox(
+                      height: 20.0,
+                      child: Row(
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(right: 2.0),
+                            child: Icon(Icons.person, size: 14.0, color: Colors.white),
+                          ),
+                          Text(
+                            comment.name,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          const Expanded(child: SizedBox()),
+                          const Padding(
+                            padding: EdgeInsets.only(right: 2.0),
+                            child: Icon(Icons.date_range, size: 14.0, color: Colors.white),
+                          ),
+                          Text(
+                            comment.createDate == comment.updateDate
+                                ? DateFormat('yyyy-MM-dd HH:mm:ss').format(comment.createDate)
+                                : '${DateFormat('yyyy-MM-dd HH:mm:ss').format(comment.updateDate)} (수정됨)',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          modifyOption,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10.0, 2.0, 10.0, 2.0),
+                  child: Text(comment.content),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget _modifyComment(BuildContext context, CommunityComment comment, StreamController<bool?> streamController,
+      StreamController<CommunityCommentList> commentListStream, CommunityCommentList commentList) {
+    TextEditingController commentController = TextEditingController();
+    GlobalKey<FormState> commentKey = GlobalKey<FormState>();
+    commentController.text = comment.content;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10.0),
+      child: SizedBox(
+        width: 1020.0,
+        height: 100.0,
+        child: Stack(
+          children: [
+            Positioned(
+              child: SizedBox(
+                width: 901.0,
+                height: 100.0,
+                child: Form(
+                  key: commentKey,
+                  child: TextFormField(
+                    controller: commentController,
+                    focusNode: FocusNode(
+                      onKey: (FocusNode node, RawKeyEvent evt) {
+                        if (!evt.isShiftPressed && evt.logicalKey.keyLabel == 'Enter') {
+                          if (evt is RawKeyDownEvent) {
+                            node.unfocus();
+                            commentKey.currentState!.save();
+                          }
+                          return KeyEventResult.handled;
+                        } else {
+                          return KeyEventResult.ignored;
+                        }
+                      },
+                    ),
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: const InputDecoration(
+                      hintText: '댓글 입력',
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(20.0),
+                          bottomLeft: Radius.circular(20.0),
+                        ),
+                        borderSide: BorderSide(color: Colors.grey),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(20.0),
+                          bottomLeft: Radius.circular(20.0),
+                        ),
+                        borderSide: BorderSide(color: Colors.grey),
+                      ),
+                      isDense: true,
+                    ),
+                    style: const TextStyle(fontSize: 14.0),
+                    onSaved: (value) async {
+                      if (commentController.text.isNotEmpty) {
+                        bool patchSuccess =
+                            await HandleCommunity.patchComment(context, comment.commentNum, commentController.text);
+                        if (patchSuccess && context.mounted) {
+                          commentListStream.add(await HandleCommunity.getCommentList(
+                              context, {'post': commentList.postNum, 'page': commentList.pageNum}));
+                          streamController.add(null);
+                        } else {
+                          await HandleError.ifErroredPushError(context);
+                        }
+                      } else {
+                        await showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text('댓글 작성 오류'),
+                              content: const Text('댓글이 비어있습니다.\n입력 후 수정 버튼을 눌러주세요.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('확인'),
+                                ),
+                              ],
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20.0),
+                              ),
+                            );
+                          },
+                          barrierDismissible: true,
+                        );
+                      }
+                    },
+                    keyboardType: TextInputType.multiline,
+                    minLines: 5,
+                    maxLines: null,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 900.0,
+              child: ElevatedButton(
+                onPressed: () async {
+                  commentKey.currentState!.save();
+                },
+                style: ElevatedButton.styleFrom(
+                  fixedSize: const Size(120.0, 100.0),
+                  elevation: 0.0,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(20.0),
+                      bottomRight: Radius.circular(20.0),
+                    ),
+                  ),
+                ),
+                child: const Text('수정'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1108,6 +1336,15 @@ class PostListWidget {
                       ),
                       const SizedBox(width: 2.0),
                       Text(post.title!),
+                      post.commentCount! > 0
+                          ? Padding(
+                              padding: const EdgeInsets.only(left: 2.0),
+                              child: Text(
+                                '[${post.commentCount.toString()}]',
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                            )
+                          : const SizedBox(),
                     ],
                   ),
                   6),
@@ -1368,10 +1605,12 @@ class WritePostPage extends StatefulWidget {
 class _WritePostPageState extends State<WritePostPage> {
   @override
   void initState() {
-    if (widget.query.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        Navigator.pushNamedAndRemoveUntil(context, '/community/post', (_) => false);
-      });
+    for (var element in widget.query.keys) {
+      if (element != 'additional') {
+        WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+          Navigator.pushNamedAndRemoveUntil(context, '/community/post', (_) => false);
+        });
+      }
     }
 
     super.initState();
@@ -1381,7 +1620,7 @@ class _WritePostPageState extends State<WritePostPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar.widget(context),
-      body: WritePost.widget(context),
+      body: WritePost.widget(context, widget.query['additional']),
     );
   }
 }
@@ -1389,15 +1628,15 @@ class _WritePostPageState extends State<WritePostPage> {
 class WritePost {
   static String? selectedCategory;
 
-  static Widget widget(BuildContext context) {
+  static Widget widget(BuildContext context, Map<String, dynamic>? query) {
     List<Widget> list = [];
 
     final TextEditingController titleController = TextEditingController();
     final TextEditingController contentController = TextEditingController();
 
-    list.add(_postForm(context, titleController, contentController));
+    list.add(_postForm(context, query, titleController, contentController));
     list.add(const SizedBox(height: 10.0));
-    list.add(_buttons(context, titleController, contentController));
+    list.add(_buttons(context, query, titleController, contentController));
 
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(200.0, 10.0, 200.0, 10.0),
@@ -1408,14 +1647,14 @@ class WritePost {
     );
   }
 
-  static Widget _buttons(
-      BuildContext context, TextEditingController titleController, TextEditingController contentController) {
+  static Widget _buttons(BuildContext context, Map<String, dynamic>? query, TextEditingController titleController,
+      TextEditingController contentController) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         _cancelButton(context),
         const SizedBox(width: 10),
-        _submitButton(context, titleController, contentController),
+        _submitButton(context, query, titleController, contentController),
       ],
     );
   }
@@ -1439,8 +1678,8 @@ class WritePost {
     );
   }
 
-  static Widget _submitButton(
-      BuildContext context, TextEditingController titleController, TextEditingController contentController) {
+  static Widget _submitButton(BuildContext context, Map<String, dynamic>? query, TextEditingController titleController,
+      TextEditingController contentController) {
     return ElevatedButton(
       onPressed: () async {
         if (accountManager.get().name is! String && context.mounted) {
@@ -1482,17 +1721,33 @@ class WritePost {
 
         if (selectedCategory is String && titleController.text.isNotEmpty && contentController.text.isNotEmpty) {
           if (accountManager.accountArguments.name is String) {
-            int? postSuccess;
-            if (context.mounted) {
-              postSuccess = await HandleCommunity.postPost(
-                  context, selectedCategory!, titleController.text, contentController.text);
-            }
-            if (postSuccess is int && context.mounted) {
-              WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-                Navigator.pushNamedAndRemoveUntil(context, '/community?post=$postSuccess', (_) => false);
-              });
+            if (query == null) {
+              int? postSuccess;
+              if (context.mounted) {
+                postSuccess = await HandleCommunity.postPost(
+                    context, selectedCategory!, titleController.text, contentController.text);
+              }
+              if (postSuccess is int && context.mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                  Navigator.pushNamedAndRemoveUntil(context, '/community?post=$postSuccess', (_) => false);
+                });
+              } else {
+                await HandleError.ifErroredPushError(context);
+              }
             } else {
-              await HandleError.ifErroredPushError(context);
+              late bool patchSuccess;
+              if (context.mounted) {
+                patchSuccess = await HandleCommunity.patchPost(
+                    context, query['postNum']!, selectedCategory!, titleController.text, contentController.text);
+              }
+              if (patchSuccess && context.mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, '/community?post=${query['postNum'].toString()}', (_) => false);
+                });
+              } else {
+                await HandleError.ifErroredPushError(context);
+              }
             }
           }
         } else {
@@ -1531,8 +1786,8 @@ class WritePost {
     );
   }
 
-  static Widget _postForm(
-      BuildContext context, TextEditingController titleController, TextEditingController contentController) {
+  static Widget _postForm(BuildContext context, Map<String, dynamic>? query, TextEditingController titleController,
+      TextEditingController contentController) {
     return Material(
       elevation: 8.0,
       color: Colors.white,
@@ -1542,19 +1797,17 @@ class WritePost {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _categorySelect(context),
-            _titleField(titleController),
+            _categorySelect(context, query),
+            _titleField(query, titleController),
             const SizedBox(height: 10.0),
-            _contentField(contentController),
+            _contentField(query, contentController),
           ],
         ),
       ),
     );
   }
 
-  static Widget _categorySelect(
-    BuildContext context,
-  ) {
+  static Widget _categorySelect(BuildContext context, Map<String, dynamic>? query) {
     return FutureBuilder(
       future: HandleCommunity.getCategoryList(context),
       builder: (context, snapshot) {
@@ -1567,6 +1820,9 @@ class WritePost {
               builder: (context, snapshot) {
                 selectedCategory = snapshot.data;
                 List<Widget> children = [];
+                if (query != null) {
+                  selectedCategoryStreamController.add(query['category']);
+                }
                 for (var element in categoryList) {
                   children.add(
                     Padding(
@@ -1599,7 +1855,8 @@ class WritePost {
     );
   }
 
-  static Widget _titleField(TextEditingController titleController) {
+  static Widget _titleField(Map<String, dynamic>? query, TextEditingController titleController) {
+    titleController.text = query == null ? '' : query['title']!;
     return TextFormField(
       controller: titleController,
       textAlignVertical: TextAlignVertical.center,
@@ -1618,7 +1875,8 @@ class WritePost {
     );
   }
 
-  static Widget _contentField(TextEditingController contentController) {
+  static Widget _contentField(Map<String, dynamic>? query, TextEditingController contentController) {
+    contentController.text = query == null ? '' : query['content']!;
     return TextFormField(
       controller: contentController,
       textAlignVertical: TextAlignVertical.top,

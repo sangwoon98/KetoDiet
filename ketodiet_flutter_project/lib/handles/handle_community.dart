@@ -28,7 +28,7 @@ class CommunityPost {
   int postNum;
   String? category, title, name, content;
   int? hit, recommend, commentCount;
-  List<String>? recommendList;
+  List<dynamic>? recommendList;
   DateTime? createDate, updateDate;
 
   CommunityPost({
@@ -189,11 +189,10 @@ class CommunityCommentList {
         commentNum: element['comment_num'],
         name: element['name'],
         content: element['content'],
-        createDate: element['create_date'],
-        updateDate: element['update_date'],
+        createDate: DateTime.parse(element['create_date']),
+        updateDate: DateTime.parse(element['update_date']),
       ));
     }
-
     return communityCommentList;
   }
 }
@@ -248,10 +247,16 @@ class HandleCommunity {
 
       if (response.statusCode == 200) {
         Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+        // print(body);
+        // print(1);
         communityForum.communityPost = CommunityPost.init(query, body['post']);
+        // print(2);
         communityForum.communityPostList = CommunityPostList.init(query, body['page']);
+        // print(3);
         communityForum.communityCommentList = CommunityCommentList.init(query, body['comment']);
+        // print(4);
         communityForum.categoryList = CategoryList.init(body['category']);
+        // print('!');
       }
     }
 
@@ -259,7 +264,8 @@ class HandleCommunity {
   }
 
   static Future<CommunityCommentList> getCommentList(BuildContext context, Map<String, dynamic> query) async {
-    http.Response response = await http.get(Uri.http(backendDomain, '/api/community', _encodeQueryComponent(query)));
+    http.Response response =
+        await http.get(Uri.http(backendDomain, '/api/community/comment', _encodeQueryComponent(query)));
 
     if (response.statusCode == 200) {
       Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
@@ -308,7 +314,7 @@ class HandleCommunity {
 
   static Future<bool> postComment(BuildContext context, int postNum, String content) async {
     http.Response response = await http.post(
-      Uri.http(backendDomain, '/api/comment', {'post_num': postNum.toString()}),
+      Uri.http(backendDomain, '/api/community/comment', {'post_num': postNum.toString()}),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -324,6 +330,91 @@ class HandleCommunity {
     } else {
       errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
           'handle_community.dart', 'HandleCommunity.postComment'));
+      return false;
+    }
+  }
+
+  static Future<bool> patchPost(
+      BuildContext context, int postNum, String category, String title, String content) async {
+    http.Response response = await http.patch(
+      Uri.http(backendDomain, '/api/community', {'post_num': postNum.toString()}),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+      body: jsonEncode({
+        'category': category,
+        'title': title,
+        'content': content,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.postPost'));
+      return false;
+    }
+  }
+
+  static Future<bool> patchComment(BuildContext context, int commentNum, String content) async {
+    http.Response response = await http.patch(
+      Uri.http(backendDomain, '/api/community/comment', {'comment_num': commentNum.toString()}),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+      body: jsonEncode({
+        'content': content,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.postPost'));
+      return false;
+    }
+  }
+
+  static Future<bool> deletePost(BuildContext context, int postNum) async {
+    http.Response response = await http.delete(
+      Uri.http(backendDomain, '/api/community', {'post_num': postNum.toString()}),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.postPost'));
+      return false;
+    }
+  }
+
+  static Future<bool> deleteComment(BuildContext context, int commentNum) async {
+    http.Response response = await http.delete(
+      Uri.http(backendDomain, '/api/community/comment', {'comment_num': commentNum.toString()}),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.postPost'));
       return false;
     }
   }
