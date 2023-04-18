@@ -11,11 +11,17 @@ from rest_framework import generics, pagination
 from user.models import UserDB
 
 from .serializers import CommunityDBSerializer
-from .models import CommunityDB, CommunitycommentDB
+from .models import CommunityDB, CommunitycommentDB, CategoryDB
 from rest_framework import serializers
 from user.views import AccountView
 
+#-----
+# from django.conf import settings
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from django.db.models import Q
+import json
 
 # DB 모델 인스턴스나 QuerySet 데이터를 JSON으로 반환 , 출력값: fields로 고정, data={'name':name}형태로 삽입후 직렬화 가능,
 class CommunityDBSerializer(serializers.ModelSerializer): 
@@ -30,26 +36,67 @@ class CommunityDBSerializerNoContent(serializers.ModelSerializer):
         
 
 class CommunityListPagination(pagination.PageNumberPagination): # DRF에서 제공하는 pagination을 상속
-    page_size = 20
+    page_size = 30
 
-class CommunityList(generics.ListAPIView): # serializer_class,pagination_class 두가지만 지정해주면 DRF에서 response까지 보냄.
-    # queryset = CommunityDB.objects.order_by('-post_num')
+class CommunityList(generics.ListAPIView):
     serializer_class = CommunityDBSerializerNoContent  
     pagination_class = CommunityListPagination
 
     def get_queryset(self):
         category = self.request.query_params.get('category')
+        target = self.request.query_params.get('target')
+        keyword = self.request.query_params.get('keyword')
+        recommand = self.request.query_params.get('recommand')
+        
+        queryset = CommunityDB.objects.all().order_by('-post_num')
+        
         if category:
-                try :
-                    queryset = CommunityDB.objects.filter(category=category).order_by('-post_num')
-                except:
-                    queryset = CommunityDB.objects.none() 
-        else:
-            try:
-                queryset = CommunityDB.objects.all().order_by('-post_num')
-            except:
-                queryset = CommunityDB.objects.none() 
+            queryset = queryset.filter(category=category)
+        
+        if recommand:
+            queryset = queryset.filter(recommand=True)
+        
+        if target and keyword:
+            if target == 'all':
+                queryset = queryset.filter(Q(title__contains=keyword) | Q(name__contains=keyword) | Q(content__contains=keyword) | Q(comment__content__contains=keyword)).distinct()
+            elif target == 'title':
+                queryset = queryset.filter(title__contains=keyword)
+            elif target == 'name':
+                queryset = queryset.filter(name__contains=keyword)
+            elif target == 'content':
+                queryset = queryset.filter(content__contains=keyword)
+            elif target == 'comment':
+                queryset = queryset.filter(comment__content__contains=keyword).distinct()
+        
         return queryset
+
+
+#___________________________전역 함수____________________________
+
+def get_post_num_order(post_num, all_list, division_number):
+    import math
+    post_num=int(post_num)
+    """
+    all_list에서 post_num이 몇번째에 위치하는지 찾는 함수
+    """
+    # all_list에서 post_num과 같은 객체의 인덱스를 반환합니다.
+    index = next((i for i, obj in enumerate(all_list) if obj.post_num == post_num), None)
+
+    # post_num을 가진 객체가 없으면 None을 반환합니다.
+    if index is None:
+        return None
+    # post_num을 가진 객체의 인덱스를 1부터 시작하는 순서로 변환하여 반환합니다.
+    return math.ceil((index+1)/division_number)
+
+def get_http_request_to_request(request):
+    http_request = HttpRequest()
+    http_request.GET=request.GET
+    http_request.method = 'GET'
+    http_request.META['SERVER_NAME'] = request.META['SERVER_NAME']
+    http_request.META['SERVER_PORT'] = request.META['SERVER_PORT']
+    return(http_request)
+
+#___________________________전역 함수 끝____________________________
 
 
 
@@ -60,20 +107,45 @@ class CommunityView(APIView):
 
     def get(self, request): # hit 기능 추가
         page = self.request.query_params.get('page')
-        http_request = HttpRequest()
-        http_request.GET=request.GET
-        http_request.method = 'GET'
-
-        if page:
-            serializer = CommunityList.as_view()(http_request).data
-            return Response({'serializer':serializer,'page':page}, status=status.HTTP_200_OK)
+        categories = CategoryDB.objects.all().values_list('categorys', flat=True)
         
+        
+        if page:
+            http_request=get_http_request_to_request(request)
+            serializer = CommunityList.as_view()(http_request).data
+            return Response({'category':categories,  'page':serializer}, status=status.HTTP_200_OK)
+            
         else:
             post_num = request.query_params.get('post_num')
             try: 
                 qs = CommunityDB.objects.get(post_num=post_num)
+                qs.hit += 1
+                qs.save()
+                #__________________________글_______________________________________
+                
                 community_serializer = CommunityDBSerializer(qs)
-                return Response(community_serializer.data, status=status.HTTP_200_OK) 
+                #__________________________목록_______________________________________
+                http_request = HttpRequest()
+                http_request.method = 'GET'
+                http_request.META['SERVER_NAME'] = request.META['SERVER_NAME']
+                http_request.META['SERVER_PORT'] = request.META['SERVER_PORT']
+                all_list=CommunityDB.objects.all().order_by('-post_num')
+                page_number = get_post_num_order(post_num, all_list, 30)  # post_num이 몇번째에 속하는지 계산
+                if page_number is None:
+                    list_serializer = []  # 목록에 없을때
+                else:
+                    http_request.GET['page'] = page_number
+                    list_serializer = CommunityList.as_view()(http_request).data # list 가져다줄때 해당 목록만 가져다줌
+                #__________________________댓글________________________________________
+                import math
+                all_list=CommunitycommentDB.objects.filter(post_num=post_num)
+                comment_page=math.ceil(len(all_list)/20)
+                print('comment_page: ',comment_page)
+                http_request.GET['page'] = comment_page
+                http_request.GET['post_num'] = post_num
+                comment_serializer = CommunityCommentList.as_view()(http_request).data
+                #_________________________________________________________________
+                return Response({'page_number':page_number, 'category':categories, 'post':community_serializer.data,'comment':comment_serializer,'page':list_serializer}, status=status.HTTP_200_OK) 
             except: 
                 return Response(status=status.HTTP_400_BAD_REQUEST) # post_num값이 잘못됨
            
@@ -82,6 +154,15 @@ class CommunityView(APIView):
         id = AccountView.access_token_to_id
         try:
             name= UserDB.objects.get(id=id).name
+            recommend = request.boby.get('recommend')
+            print(recommend)
+            if recommend:
+                recommend = json.loads(CommunityDB.recommend)
+                if id not in recommend:
+                    recommend.append(id)
+                    recommend = json.dumps(recommend)
+                    recommend.save()
+                
             data = self.body_get_multy_value(request, ['title', 'content','category'])
             serializer = CommunityDBSerializer(data={'id':id, 'name': name, 'title': data[0], 'content': data[1], 'category':data[2]}) 
             if serializer.is_valid():
@@ -111,6 +192,7 @@ class CommunityView(APIView):
         else:
             return Response(status= status.HTTP_403_FORBIDDEN) # 권한 없음
 
+
     def delete(self, request):
         id = AccountView.access_token_to_id
         post_num = request.query_params.get('post_num')
@@ -128,9 +210,8 @@ class CommunityView(APIView):
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
             
-            
-            
-class CommentDBSerializer(serializers.ModelSerializer): 
+
+class CommentDBSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommunitycommentDB
         fields = '__all__' # 모든값들을 직렬화 시킴
@@ -138,12 +219,12 @@ class CommentDBSerializer(serializers.ModelSerializer):
 class Comment_notall_DBSerializer(serializers.ModelSerializer): 
     class Meta:
         model = CommunitycommentDB
-        fields = 'comment_num','name','content','create_date' # 모든값들을 직렬화 시킴
+        fields = 'comment_num','name','content','create_date','update_date' 
         
 class CommentListPagination(pagination.PageNumberPagination): # DRF에서 제공하는 pagination을 상속
     page_size = 20
         
-from rest_framework import generics
+
 
 class CommunityCommentList(generics.ListAPIView):
     serializer_class = Comment_notall_DBSerializer
@@ -151,11 +232,11 @@ class CommunityCommentList(generics.ListAPIView):
 
     def get_queryset(self):
         post_num = self.request.GET.get('post_num')
-        if not post_num:
-            # post_num parameter가 전달되지 않으면 400 Bad Request 반환
-            raise BAD_REQUEST('post_num parameter is required')
+        # if not post_num:
+        #     # post_num parameter가 전달되지 않으면 400 Bad Request 반환
+        #     raise BAD_REQUEST('post_num parameter is required')
         
-        # post_num parameter로 필터링된 댓글들을 comment_num 기준 내림차순으로 정렬하여 반환
+        # post_num parameter로 필터링된 댓글들을 comment_num 기준 오름차순으로 정렬하여 반환
         queryset = CommunitycommentDB.objects.filter(post_num=post_num).order_by('-comment_num')
         return queryset
             
@@ -163,20 +244,13 @@ class CommunityCommentList(generics.ListAPIView):
 class Community_comment(APIView):
     
     def get(self, request):
-        page = request.query_params.get('page')
         http_request = HttpRequest()
         http_request.GET = request.GET
         http_request.method = 'GET'
+        http_request.META['SERVER_NAME'] = request.META['SERVER_NAME']
+        http_request.META['SERVER_PORT'] = request.META['SERVER_PORT']
         serializer = CommunityCommentList.as_view()(http_request).data
-        return Response({'serializer':serializer,'page':page}, status=status.HTTP_200_OK)
-        
-        # post_num = request.GET.get('post_num')
-        # page_number = request.GET.get('page')
-        # comments = CommunitycommentDB.objects.filter(post_num=post_num).order_by('-comment_num')
-        # paginator = Paginator(comments, 20)  # 한 페이지에 20개의 댓글
-        # page_obj = paginator.get_page(page_number)
-        # serializer = CommentDBSerializer(page_obj, many=True)
-        # return Response(serializer.data)
+        return Response({'comment':serializer}, status=status.HTTP_200_OK)
     
     def post(self, request):
         id = AccountView.access_token_to_id
@@ -241,9 +315,157 @@ class Community_comment(APIView):
                     return Response(status=status.HTTP_403_FORBIDDEN) # 권한 없음
         except:
             return Response(status= status.HTTP_400_BAD_REQUEST)
-
-
         
+
+class Category(APIView):
+    
+    def get(self, request):
+        try:
+            categories = CategoryDB.objects.all().values_list('categorys', flat=True)
+            if not categories: # 만약 카테고리가 하나도 없다면 빈 리스트를 반환
+                categories = []
+        except:
+            return Response(status= status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'categories': categories})
+    
+    def post(self, request):
+        id = AccountView.access_token_to_id
+        try:
+            isAdmin = UserDB.objects.get(id=id).isAdmin
+            if isAdmin:
+                category = request.data.get('category') # 파라미터의 카테고리
+                all_categories = CategoryDB.objects.all().values_list('categorys', flat=True) # 저장된 모든 카테고리를 리스트로 가져옵니다.
+                if category not in all_categories: # 새로운 카테고리가 all_categories에 없으면 추가합니다.
+                    CategoryDB.objects.create(categorys=category)
+                    categories = CategoryDB.objects.all().values_list('categorys', flat=True)
+                    return Response({'categories': categories}, status= status.HTTP_201_CREATED)
+                else:
+                    return Response(status= status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(status= status.HTTP_403_FORBIDDEN)
+        except UserDB.DoesNotExist:
+            return Response({'success': False, 'message': 'User does not exist'})
+    
+    def patch(self, request):
+        id = AccountView.access_token_to_id
+        try:
+            isAdmin = UserDB.objects.get(id=id).isAdmin
+            if isAdmin:
+                new_category = request.data.get('newcategory') # 교채 하려는 카태고리
+                category = request.data.get('category') # 교채 하려는 카태고리
+                category = CategoryDB.objects.get(categorys=category)
+                if new_category:
+                    category.categorys = new_category
+                    category.save()
+                    categories = CategoryDB.objects.all().values_list('categorys', flat=True)
+                    return Response({'categories': categories},status= status.HTTP_200_OK)
+                else:
+                    return Response(status= status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(status= status.HTTP_403_FORBIDDEN)
+        except CategoryDB.DoesNotExist:
+            return Response(status= status.HTTP_404_NOT_FOUND)
+        
+    def delete(self, request):
+        id = AccountView.access_token_to_id
+        try:
+            isAdmin = UserDB.objects.get(id=id).isAdmin
+            if isAdmin:
+                category = request.data.get('category') # 파라미터의 카테고리
+                category = CategoryDB.objects.get(categorys=category)
+                category.delete()
+                categories = CategoryDB.objects.all().values_list('categorys', flat=True)
+                if not categories: # 만약 카테고리가 하나도 없다면 빈 리스트를 반환
+                    categories = []
+                return Response({'categories': categories}, status= status.HTTP_200_OK)
+            else:
+                return Response(status= status.HTTP_403_FORBIDDEN)
+        except CategoryDB.DoesNotExist:
+            return Response(status= status.HTTP_404_NOT_FOUND)
+        
+        
+class Recommend(APIView):
+    def get(self, request):
+        post_num=request.query_params.get('post_num')
+        community=CommunityDB.objects.get(post_num=post_num)
+        recommend=community.recommend
+        return Response({'recommend': recommend})
+    
+    def post(self, request):
+        user_id = AccountView.access_token_to_id
+        if user_id:
+            post_num = request.query_params.get('post_num')
+            community = CommunityDB.objects.get(post_num=post_num)
+            recommends = json.loads(community.recommend)
+            if isinstance(recommends, int):
+                recommends = []
+            if user_id not in recommends:
+                recommends.append(user_id)
+                community.recommend = json.dumps(recommends)
+                community.save()
+            return Response({'recommend': community.recommend})
+        else:
+            return Response(status= status.HTTP_403_FORBIDDEN)
+        
+    def delete(self, request):
+        user_id = AccountView.access_token_to_id
+        if user_id:
+            post_num = request.query_params.get('post_num')
+            community = CommunityDB.objects.get(post_num=post_num)
+            recommends = json.loads(community.recommend)
+            if isinstance(recommends, int):
+                recommends = []
+            if user_id in recommends:
+                recommends.remove(user_id)
+                community.recommend = json.dumps(recommends)
+                community.save()
+            return Response({'recommend': community.recommend})
+        else:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+
+
+# import importlib
+# from . import config
+
+# class Category(APIView):
+    
+#     def post(self, request):
+#         # id = AccountView.access_token_to_id
+#         id = 1
+#         try:
+#             isAdmin = UserDB.objects.get(id=id).isAdmin
+#             if isAdmin:
+#                 category = request.data.get('category')
+#                 if category not in config.CATEGORIES:
+#                     print(config.CATEGORIES)
+#                     config.CATEGORIES.append(category)
+#                     print(config.CATEGORIES)
+#                     new_config = importlib.import_module('.config', __package__)
+#                     setattr(new_config, 'CATEGORIES', config.CATEGORIES)
+#                 return Response({'success': True, 'categories': config.CATEGORIES})
+#             else:
+#                 return Response({'success': False, 'message': 'Unauthorized'})
+#         except UserDB.DoesNotExist:
+#             return Response({'success': False, 'message': 'User does not exist'})
+
+#     def delete(self, request):
+#         # id = AccountView.access_token_to_id
+#         id = 1
+#         try:
+#             isAdmin = UserDB.objects.get(id=id).isAdmin
+#             if isAdmin:
+#                 category = request.query_params.get('category')
+#                 if category in config.CATEGORIES:
+#                     config.CATEGORIES.remove(category)
+#                     new_config = importlib.import_module('.config', __package__)
+#                     setattr(new_config, 'CATEGORIES', config.CATEGORIES)
+#                 return Response({'success': True, 'categories': config.CATEGORIES})
+#             else:
+#                 return Response({'success': False, 'message': 'Unauthorized'})
+#         except UserDB.DoesNotExist:
+#             return Response({'success': False, 'message': 'User does not exist'})
+
         
     # def put(self, request, pk):
     #     community = CommunityDB.objects.get(pk=pk)

@@ -1,21 +1,30 @@
 @host = http://localhost:8001
 
 ### 게시글 작성 ###
-POST {{host}}/community/
+POST {{host}}/api/community
 Content-Type: application/json
 
 {
-    "name": "John",
     "title": "Hello, world!",
     "content": "This is a test post.",
-    "category": "Test"
+    "category": "Test",  
 }
 
-### 게시글 목록 조회 ###
+### 전체 게시글 목록 조회 ###
 GET {{host}}/api/community?page=1
 
+### 지정 카테고리 게시글 목록 조회 ###
+GET {{host}}/api/community?page=1&category=Test
+
+### 전체 게시글에서 타겟 키워드 조회 ###
+GET {{host}}/api/community?page=1&target=huhi&keyword=dasd
+
+### 지정 카테고리에서 타겟 키워드 조회 ###
+GET {{host}}/api/community?page=1&category=Test&target=title&keyword=dasd
+
+
 ### 게시글 상세 조회 ###
-GET {{host}}/api/community/?post_num=1
+GET {{host}}/api/community?post_num=2
 
 ### 게시글 수정 ###
 PATCH {{host}}/api/community/?post_num=1
@@ -29,6 +38,42 @@ Content-Type: application/json
 ### 게시글 삭제 ###
 DELETE {{host}}/community/?post_num=1
 
-
 ### 댓글 조회 ###
 GET {{host}}/api/community/comment?post_num=1&page=1
+
+### 카테고리 조회 ###
+GET {{host}}/api/community/category
+
+### 카테고리 추가 ###
+POST {{host}}/api/community/category
+Content-Type: application/json
+
+{
+    "category": "GGCategory"
+}
+
+### 카테고리 삭제 ###
+DELETE {{host}}/api/community/category
+Content-Type: application/json
+
+{
+    "category": "일반"
+}
+
+### 카테고리 수정 ###
+PATCH  {{host}}/api/community/category
+Content-Type: application/json
+
+{
+    "category":"NewCategory",
+    "newcategory": "KKCategory"
+}
+
+
+### 추천수 조회 ###
+GET {{host}}/api/community/recommend?post_num=2
+Content-Type: application/json
+
+### 추천 추가 ###
+POST {{host}}/api/community/recommend?post_num=2
+

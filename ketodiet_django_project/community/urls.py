@@ -18,7 +18,9 @@ from . import views
 
 urlpatterns = [
     path('', views.CommunityView.as_view(), name='Community'),
-    path('/comment', views.Community_comment.as_view(), name='Community_comment'),
+    path('/comment', views.Community_comment.as_view(), name='Comment'),
+    path('/category', views.Category.as_view(), name='Catagory'),
+    path('/recommend', views.Recommend.as_view(), name='Recommend'),
 ]
 
 # path('page=<int:page>', views.CommunityList.as_view(), name='community-list'),
