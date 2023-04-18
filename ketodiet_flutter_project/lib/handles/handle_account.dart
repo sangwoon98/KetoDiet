@@ -13,13 +13,15 @@ AccountManager accountManager = AccountManager();
 class AccountArgs {
   OAuthToken? oAuthToken;
   String? name;
+  bool? isAdmin;
 
-  AccountArgs({this.oAuthToken, this.name});
+  AccountArgs({this.oAuthToken, this.name, this.isAdmin});
 }
 
 class AccountManager {
   StreamController<OAuthToken?> oAuthTokenStreamController = StreamController<OAuthToken?>.broadcast();
   StreamController<String?> nameStreamController = StreamController<String?>.broadcast();
+  StreamController<bool?> isAdminStreamController = StreamController<bool?>.broadcast();
   AccountArgs accountArguments = AccountArgs();
 
   AccountManager() {
@@ -29,13 +31,16 @@ class AccountManager {
     nameStreamController.stream.listen((event) {
       accountArguments.name = event;
     });
+    isAdminStreamController.stream.listen((event) {
+      accountArguments.isAdmin = event;
+    });
   }
 
   AccountArgs get() {
     return accountArguments;
   }
 
-  void set({AccountArgs? accountArgs, OAuthToken? oAuthToken, String? name}) {
+  void set({AccountArgs? accountArgs, OAuthToken? oAuthToken, String? name, bool? isAdmin}) {
     if (accountArgs == null) {
       if (oAuthToken != null) {
         oAuthTokenStreamController.add(oAuthToken);
@@ -46,17 +51,25 @@ class AccountManager {
         nameStreamController.add(name);
         accountArguments.name = name;
       }
+
+      if (isAdmin != null) {
+        isAdminStreamController.add(isAdmin);
+        accountArguments.isAdmin = isAdmin;
+      }
     } else {
       oAuthTokenStreamController.add(accountArgs.oAuthToken);
       nameStreamController.add(accountArgs.name);
-      accountArgs.oAuthToken = oAuthToken;
+      isAdminStreamController.add(accountArgs.isAdmin);
+      accountArguments.oAuthToken = oAuthToken;
       accountArguments.name = name;
+      accountArguments.isAdmin = isAdmin;
     }
   }
 
   void clear() {
     oAuthTokenStreamController.add(null);
     nameStreamController.add(null);
+    isAdminStreamController.add(null);
   }
 }
 
@@ -77,7 +90,9 @@ class HandleAccount {
         );
 
         if (response.statusCode == 200) {
-          accountManager.set(name: jsonDecode(utf8.decode(response.bodyBytes))['name']);
+          accountManager.set(
+              name: jsonDecode(utf8.decode(response.bodyBytes))['name'],
+              isAdmin: jsonDecode(utf8.decode(response.bodyBytes))['isAdmin']);
         } else {
           accountManager.clear();
           await TokenManagerProvider.instance.manager.clear();
@@ -152,7 +167,9 @@ class HandleAccount {
       );
 
       if (response.statusCode == 200) {
-        accountManager.set(name: jsonDecode(utf8.decode(response.bodyBytes))['name']);
+        accountManager.set(
+            name: jsonDecode(utf8.decode(response.bodyBytes))['name'],
+            isAdmin: jsonDecode(utf8.decode(response.bodyBytes))['isAdmin']);
       } else if (response.statusCode == 404) {
         if (context.mounted) await post(context);
       } else {
@@ -451,5 +468,3 @@ class SetNameWidget {
     );
   }
 }
-
-// TODO: post, patch 텍스트필드 컨트롤러 손보기

@@ -29,7 +29,7 @@ class _TestPageState extends State<TestPage> {
       appBar: CustomAppBar.widget(context),
       body: Center(
         child: Column(
-          children: [],
+          children: const [],
         ),
       ),
     );

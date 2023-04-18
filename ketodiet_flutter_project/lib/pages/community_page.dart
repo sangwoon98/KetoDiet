@@ -157,11 +157,9 @@ class PostWidget {
           ),
         ),
         Container(width: 1040.0, height: 2.0, color: Colors.grey),
-        // TODO: content String => HTML
         Padding(
           padding: const EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 50.0),
           child: SizedBox(width: double.infinity, child: Text(communityPost.content!)),
-          // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 20.0),
