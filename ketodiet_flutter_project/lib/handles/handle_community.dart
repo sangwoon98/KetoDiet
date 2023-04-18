@@ -28,6 +28,7 @@ class CommunityPost {
   int postNum;
   String? category, title, name, content;
   int? hit, recommend, commentCount;
+  List<String>? recommendList;
   DateTime? createDate, updateDate;
 
   CommunityPost({
@@ -37,11 +38,14 @@ class CommunityPost {
     this.name,
     this.content,
     this.hit,
-    this.recommend,
     this.commentCount,
+    this.recommendList,
     this.createDate,
     this.updateDate,
-  });
+  }) {
+    recommendList ??= [];
+    recommend ??= recommendList!.length;
+  }
 
   static CommunityPost? init(Map<String, dynamic> query, Map<String, dynamic>? body) {
     if (!query.containsKey('post')) return null;
@@ -55,7 +59,7 @@ class CommunityPost {
       name: body['name'],
       content: body['content'],
       hit: body['hit'],
-      recommend: body['recommend'],
+      recommendList: body['recommend'],
       commentCount: body['comment_count'],
       createDate: DateTime.parse(body['create_date']),
       updateDate: DateTime.parse(body['update_date']),
@@ -123,7 +127,7 @@ class CommunityPostList {
         title: element['title'],
         name: element['name'],
         hit: element['hit'],
-        recommend: element['recommend'],
+        recommendList: element['recommend'],
         commentCount: element['comment_count'],
         createDate: DateTime.parse(element['create_date']),
       ));
@@ -195,11 +199,15 @@ class CommunityCommentList {
 }
 
 class CategoryList {
-  static List<String> init(List<String>? body) {
+  static List<String> init(List<dynamic>? body) {
     if (body == null || body.isEmpty) {
       return [];
     } else {
-      return body;
+      List<String> list = [];
+      for (var element in body) {
+        list.add(element);
+      }
+      return list;
     }
   }
 }
@@ -240,11 +248,10 @@ class HandleCommunity {
 
       if (response.statusCode == 200) {
         Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
-
         communityForum.communityPost = CommunityPost.init(query, body['post']);
         communityForum.communityPostList = CommunityPostList.init(query, body['page']);
         communityForum.communityCommentList = CommunityCommentList.init(query, body['comment']);
-        communityForum.categoryList = CategoryList.init(body['categories']);
+        communityForum.categoryList = CategoryList.init(body['category']);
       }
     }
 
