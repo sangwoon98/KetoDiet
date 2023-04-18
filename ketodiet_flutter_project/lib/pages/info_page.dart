@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../modules/app_bar.dart';
 
 class InfoPage extends StatefulWidget {
-  final Map<String, dynamic> params;
+  final Map<String, dynamic> query;
 
-  const InfoPage(this.params, {super.key});
+  const InfoPage(this.query, {super.key});
 
   @override
   State<InfoPage> createState() => _InfoPageState();
@@ -13,13 +13,18 @@ class InfoPage extends StatefulWidget {
 
 class _InfoPageState extends State<InfoPage> {
   @override
-  Widget build(BuildContext context) {
-    if (widget.params.isNotEmpty) {
+  void initState() {
+    if (widget.query.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        Navigator.pushReplacementNamed(context, '/info');
+        Navigator.pushNamedAndRemoveUntil(context, '/info', (_) => false);
       });
     }
 
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar.widget(context),
       body: const Center(

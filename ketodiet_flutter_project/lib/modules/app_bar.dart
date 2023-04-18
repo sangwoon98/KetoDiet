@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../modules/handle.dart';
 
-import '../pages/main_page.dart';
-
 class CustomAppBar {
   static AppBar widget(BuildContext context) {
     return AppBar(
@@ -33,7 +31,7 @@ class PageButton {
         child: TextButton(
           onPressed: () {
             WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-              Navigator.pushReplacementNamed(context, '/');
+              Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
             });
           },
           style: TextButton.styleFrom(
@@ -74,7 +72,7 @@ class PageButton {
         child: TextButton(
           onPressed: () {
             WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-              Navigator.pushReplacementNamed(context, path);
+              Navigator.pushNamedAndRemoveUntil(context, path, (_) => false);
             });
           },
           style: TextButton.styleFrom(
@@ -102,6 +100,10 @@ class Actions {
       StreamBuilder(
         stream: accountManager.nameStreamController.stream,
         builder: (context, snapshot) {
+          if (snapshot.data != accountManager.accountArguments.name) {
+            accountManager.nameStreamController.add(accountManager.accountArguments.name);
+            accountManager.oAuthTokenStreamController.add(accountManager.accountArguments.oAuthToken);
+          }
           if (!snapshot.hasData) {
             return signInButton(context);
           } else {

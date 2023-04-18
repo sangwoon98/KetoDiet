@@ -1,15 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:ketodiet_flutter_project/modules/handle.dart';
 
 import '../modules/app_bar.dart';
 
 class CommunityPage extends StatefulWidget {
-  final Map<String, dynamic> params;
+  final Map<String, dynamic> query;
 
-  const CommunityPage(this.params, {super.key});
+  const CommunityPage(this.query, {super.key});
 
   @override
   State<CommunityPage> createState() => _CommunityPageState();
@@ -18,77 +19,812 @@ class CommunityPage extends StatefulWidget {
 class _CommunityPageState extends State<CommunityPage> {
   @override
   Widget build(BuildContext context) {
-    Map<String, dynamic> params = widget.params;
-    CommunityPostList query = CommunityPostList(0);
-
-    if (params.isEmpty) {
-      query.pageNum = 1;
-    } else if (params.containsKey('page')) {
-      query.pageNum = int.parse(params['page']);
-      if (params.containsKey('category')) query.category = params['category'];
-      if (params.containsKey('target')) query.target = params['target'];
-      if (params.containsKey('keyword')) query.keyword = params['keyword'];
-      if (params.containsKey('recommend')) query.recommend = true;
-    } else {
-      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-        Navigator.pushReplacementNamed(context, '/community?page=1');
-      });
-    }
-
-    if (query.pageNum == 0) {
-      return Scaffold(
-        appBar: CustomAppBar.widget(context),
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    } else {
-      return Scaffold(
-        appBar: CustomAppBar.widget(context),
-        body: FutureBuilder(
-          future: HandleCommunity.getPostList(context, query),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return ForumWidget.widget(context, snapshot.data!);
-            } else {
-              return const Center(child: CircularProgressIndicator());
-            }
-          },
-        ),
-      );
-    }
+    return Scaffold(
+      appBar: CustomAppBar.widget(context),
+      body: FutureBuilder(
+        future: HandleCommunity.getForum(context, widget.query),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return ForumWidget.widget(context, snapshot.data!);
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
+    );
   }
 }
 
 class ForumWidget {
-  static Widget widget(BuildContext context, CommunityPostList postList) {
-    List<Widget> listItem = _initListItem(context, postList);
+  static Widget widget(BuildContext context, CommunityForum communityForum) {
+    List<Widget> itemList = _initItem(context, communityForum);
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(200.0, 50.0, 200.0, 100.0),
+      padding: const EdgeInsets.fromLTRB(200.0, 10.0, 200.0, 10.0),
       itemBuilder: (BuildContext context, int index) {
-        return listItem[index];
+        return itemList[index];
       },
-      itemCount: listItem.length,
+      itemCount: itemList.length,
     );
   }
 
-  static List<Widget> _initListItem(BuildContext context, CommunityPostList postList) {
+  static List<Widget> _initItem(BuildContext context, CommunityForum communityForum) {
     List<Widget> list = [];
 
-    list.addAll(PostListWidget.widgetList(context, postList));
+    list.addAll(PostWidget.widget(context, communityForum.communityPost, communityForum.communityCommentList));
+    list.addAll(PostListWidget.widget(context, communityForum.communityPostList!, communityForum.categoryList!));
 
     return list;
   }
 }
 
-class PostWidget {}
+class PostWidget {
+  static List<Widget> widget(
+      BuildContext context, CommunityPost? communityPost, CommunityCommentList? communityCommentList) {
+    if (communityPost == null) return [const SizedBox()];
 
-class CommentWidget {}
+    List<Widget> children;
+
+    if (communityCommentList == null) {
+      children = [_post(context, communityPost)];
+    } else {
+      children = [_post(context, communityPost), _commentList(communityCommentList)];
+    }
+
+    return [
+      Material(
+        elevation: 8.0,
+        color: Colors.white,
+        borderRadius: const BorderRadius.all(Radius.circular(20.0)),
+        child: Column(
+          children: children,
+        ),
+      ),
+      const SizedBox(height: 10.0),
+    ];
+  }
+
+  static Widget _post(BuildContext context, CommunityPost communityPost) {
+    if (communityPost.title == null) {
+      return Column(
+        children: const [
+          SizedBox(height: 200.0),
+          Text(
+            '존재하지 않는 글입니다.',
+            textAlign: TextAlign.start,
+          ),
+          SizedBox(height: 200.0),
+        ],
+      );
+    }
+
+    Widget modifyOption = const SizedBox();
+
+    if (accountManager.accountArguments.name == communityPost.name || accountManager.accountArguments.isAdmin == true) {
+      modifyOption = Row(
+        children: [
+          const SizedBox(width: 10.0),
+          Container(color: Colors.black, width: 1.0, height: 14.0),
+          TextButton(
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+            ),
+            onPressed: () {
+              WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/community/post',
+                  (_) => false,
+                  arguments: {
+                    'postNum': communityPost.postNum,
+                    'category': communityPost.category,
+                    'title': communityPost.title,
+                    'content': communityPost.content,
+                  },
+                );
+              });
+            },
+            child: const Text('수정'),
+          ),
+          Container(color: Colors.black, width: 1.0, height: 14.0),
+          TextButton(
+            onPressed: () async {
+              bool success = await HandleCommunity.deletePost(context, communityPost.postNum);
+              if (success) {
+                WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                  Navigator.pushNamedAndRemoveUntil(context, '/community', (_) => false);
+                });
+              }
+            },
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+            ),
+            child: const Text('삭제'),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            color: Colors.green,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20.0),
+              topRight: Radius.circular(20.0),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 5.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    communityPost.title!,
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(color: Colors.grey, borderRadius: BorderRadius.circular(5.0)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(1.0),
+                    child: Text(
+                      communityPost.category!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white, fontSize: 10.0),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 5.0),
+          child: SizedBox(
+            height: 18.0,
+            child: Row(
+              children: [
+                const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.person, size: 14.0)),
+                Text(communityPost.name!),
+                const Expanded(child: SizedBox()),
+                const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.remove_red_eye, size: 14.0)),
+                Text(communityPost.hit.toString()),
+                const SizedBox(width: 10.0),
+                const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.recommend, size: 14.0)),
+                Text(communityPost.recommend.toString()),
+                const SizedBox(width: 10.0),
+                const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.comment, size: 14.0)),
+                Text(communityPost.commentCount.toString()),
+                const SizedBox(width: 10.0),
+                const Padding(padding: EdgeInsets.only(right: 2.0), child: Icon(Icons.date_range, size: 14.0)),
+                Text(communityPost.createDate == communityPost.updateDate
+                    ? DateFormat('yyyy-MM-dd HH:mm:ss').format(communityPost.createDate!)
+                    : '${DateFormat('yyyy-MM-dd HH:mm:ss').format(communityPost.updateDate!)} (수정됨)'),
+                modifyOption,
+              ],
+            ),
+          ),
+        ),
+        Container(width: 1040.0, height: 2.0, color: Colors.grey),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 50.0),
+          child: SizedBox(width: double.infinity, child: Text(communityPost.content!)),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 20.0),
+          child: ElevatedButton(
+            onPressed: () async {
+              // TODO: POST 추천
+            },
+            style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0))),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+              child: Column(
+                children: [
+                  const Icon(Icons.recommend, size: 38.0),
+                  Text('추천: ${communityPost.recommend.toString()}'),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Container(width: 1020.0, height: 2.0, color: Colors.grey),
+      ],
+    );
+  }
+
+  static Widget _commentList(CommunityCommentList communityCommentList) {
+    StreamController<CommunityCommentList> streamController = StreamController<CommunityCommentList>.broadcast();
+
+    return StreamBuilder<CommunityCommentList>(
+      stream: streamController.stream,
+      builder: (context, snapshot) {
+        List<Widget> pageButtons = [];
+        List<Widget> commentList = [];
+
+        if (!snapshot.hasData) {
+          streamController.add(communityCommentList);
+        } else {
+          int minPage = snapshot.data!.pageNum - 2;
+          int maxPage = snapshot.data!.pageNum + 2;
+
+          while (true) {
+            if (minPage < 1 && maxPage >= snapshot.data!.pageCount) {
+              minPage = 1;
+              maxPage = snapshot.data!.pageCount;
+            } else if (minPage < 1) {
+              minPage++;
+              maxPage++;
+            } else if (maxPage > snapshot.data!.pageCount) {
+              minPage--;
+              maxPage--;
+            } else {
+              break;
+            }
+          }
+
+          if (minPage > 1) {
+            pageButtons.add(
+              Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: SizedBox(
+                  width: 30.0,
+                  height: 30.0,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      streamController.add(await HandleCommunity.getCommentList(context, {
+                        'post': snapshot.data!.postNum,
+                        'page': 1,
+                      }));
+                    },
+                    style: ButtonStyle(
+                      foregroundColor: MaterialStateProperty.all(Colors.black),
+                      backgroundColor: MaterialStateProperty.all(Colors.transparent),
+                      elevation: MaterialStateProperty.all(0.0),
+                      padding: MaterialStateProperty.all(EdgeInsets.zero),
+                      shape: MaterialStateProperty.all(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15.0),
+                        ),
+                      ),
+                    ),
+                    child: const Icon(Icons.keyboard_double_arrow_left),
+                  ),
+                ),
+              ),
+            );
+            pageButtons.add(Padding(
+              padding: const EdgeInsets.all(2.0),
+              child: SizedBox(
+                width: 30.0,
+                height: 30.0,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    streamController.add(await HandleCommunity.getCommentList(context, {
+                      'post': snapshot.data!.postNum,
+                      'page': snapshot.data!.pageNum - 5 < 1 ? 1 : snapshot.data!.pageNum - 5
+                    }));
+                  },
+                  style: ButtonStyle(
+                    foregroundColor: MaterialStateProperty.all(Colors.black),
+                    backgroundColor: MaterialStateProperty.all(Colors.transparent),
+                    elevation: MaterialStateProperty.all(0.0),
+                    padding: MaterialStateProperty.all(EdgeInsets.zero),
+                    shape: MaterialStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15.0),
+                      ),
+                    ),
+                  ),
+                  child: const Icon(Icons.keyboard_arrow_left),
+                ),
+              ),
+            ));
+          }
+
+          for (int i = minPage; i <= maxPage; i++) {
+            pageButtons.add(
+              Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: SizedBox(
+                  width: i < 1000 ? 30.0 : null,
+                  height: 30.0,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      streamController.add(await HandleCommunity.getCommentList(context, {
+                        'post': snapshot.data!.postNum,
+                        'page': i,
+                      }));
+                    },
+                    style: ButtonStyle(
+                      foregroundColor:
+                          MaterialStateProperty.all(snapshot.data!.pageNum == i ? Colors.white : Colors.black),
+                      backgroundColor:
+                          MaterialStateProperty.all(snapshot.data!.pageNum == i ? Colors.green : Colors.transparent),
+                      elevation: MaterialStateProperty.all(0.0),
+                      padding: MaterialStateProperty.all(EdgeInsets.zero),
+                      shape: MaterialStateProperty.all(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15.0),
+                        ),
+                      ),
+                    ),
+                    child: Text(i.toString()),
+                  ),
+                ),
+              ),
+            );
+          }
+
+          if (maxPage < snapshot.data!.pageCount) {
+            pageButtons.add(
+              Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: SizedBox(
+                  width: 30.0,
+                  height: 30.0,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      streamController.add(await HandleCommunity.getCommentList(context, {
+                        'post': snapshot.data!.postNum,
+                        'page': snapshot.data!.pageNum + 5 > snapshot.data!.pageCount
+                            ? snapshot.data!.pageCount
+                            : snapshot.data!.pageNum + 5
+                      }));
+                    },
+                    style: ButtonStyle(
+                      foregroundColor: MaterialStateProperty.all(Colors.black),
+                      backgroundColor: MaterialStateProperty.all(Colors.transparent),
+                      elevation: MaterialStateProperty.all(0.0),
+                      padding: MaterialStateProperty.all(EdgeInsets.zero),
+                      shape: MaterialStateProperty.all(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15.0),
+                        ),
+                      ),
+                    ),
+                    child: const Icon(Icons.keyboard_arrow_right),
+                  ),
+                ),
+              ),
+            );
+            pageButtons.add(
+              Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: SizedBox(
+                  width: 30.0,
+                  height: 30.0,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      streamController.add(await HandleCommunity.getCommentList(context, {
+                        'post': snapshot.data!.postNum,
+                        'page': snapshot.data!.pageCount,
+                      }));
+                    },
+                    style: ButtonStyle(
+                      foregroundColor: MaterialStateProperty.all(Colors.black),
+                      backgroundColor: MaterialStateProperty.all(Colors.transparent),
+                      elevation: MaterialStateProperty.all(0.0),
+                      padding: MaterialStateProperty.all(EdgeInsets.zero),
+                      shape: MaterialStateProperty.all(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15.0),
+                        ),
+                      ),
+                    ),
+                    child: const Icon(Icons.keyboard_double_arrow_right),
+                  ),
+                ),
+              ),
+            );
+          }
+
+          for (var element in snapshot.data!.list!) {
+            commentList.add(_comment(element, streamController, snapshot.data!));
+          }
+        }
+
+        return Column(
+          children: [
+            const SizedBox(width: 1040.0),
+            Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Row(
+                children: [
+                  const Icon(Icons.comment, size: 18.0),
+                  const SizedBox(width: 2.0),
+                  const Text('댓글', style: TextStyle(fontSize: 18.0)),
+                  const Expanded(child: SizedBox()),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: pageButtons,
+                  ),
+                ],
+              ),
+            ),
+            Column(children: commentList),
+            StreamBuilder(
+              stream: accountManager.nameStreamController.stream,
+              builder: (context, snapshot) {
+                if (snapshot.data != accountManager.accountArguments.name) {
+                  accountManager.nameStreamController.add(accountManager.accountArguments.name);
+                  accountManager.oAuthTokenStreamController.add(accountManager.accountArguments.oAuthToken);
+                }
+                if (!snapshot.hasData) {
+                  return const Padding(
+                    padding: EdgeInsets.only(bottom: 10.0),
+                    child: Text(
+                      '댓글은 회원만 작성 가능합니다.\n회원가입 및 로그인 후 이용해주세요.',
+                      textAlign: TextAlign.center,
+                    ),
+                  );
+                } else {
+                  TextEditingController commentController = TextEditingController();
+                  GlobalKey<FormState> commentKey = GlobalKey<FormState>();
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10.0),
+                    child: SizedBox(
+                      width: 1020.0,
+                      height: 100.0,
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            child: SizedBox(
+                              width: 901.0,
+                              height: 100.0,
+                              child: Form(
+                                key: commentKey,
+                                child: TextFormField(
+                                  controller: commentController,
+                                  focusNode: FocusNode(
+                                    onKey: (FocusNode node, RawKeyEvent evt) {
+                                      if (!evt.isShiftPressed && evt.logicalKey.keyLabel == 'Enter') {
+                                        if (evt is RawKeyDownEvent) {
+                                          node.unfocus();
+                                          commentKey.currentState!.save();
+                                        }
+                                        return KeyEventResult.handled;
+                                      } else {
+                                        return KeyEventResult.ignored;
+                                      }
+                                    },
+                                  ),
+                                  textAlignVertical: TextAlignVertical.top,
+                                  decoration: const InputDecoration(
+                                    hintText: '댓글 입력',
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(20.0),
+                                        bottomLeft: Radius.circular(20.0),
+                                      ),
+                                      borderSide: BorderSide(color: Colors.grey),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.only(
+                                        topLeft: Radius.circular(20.0),
+                                        bottomLeft: Radius.circular(20.0),
+                                      ),
+                                      borderSide: BorderSide(color: Colors.grey),
+                                    ),
+                                    isDense: true,
+                                  ),
+                                  style: const TextStyle(fontSize: 14.0),
+                                  onSaved: (value) async {
+                                    if (commentController.text.isNotEmpty) {
+                                      bool postSuccess = await HandleCommunity.postComment(
+                                          context, communityCommentList.postNum, commentController.text);
+                                      if (postSuccess && context.mounted) {
+                                        streamController.add(await HandleCommunity.getForum(
+                                            context, {'post': communityCommentList.postNum}).then((value) {
+                                          return value.communityCommentList!;
+                                        }));
+                                      } else {
+                                        await HandleError.ifErroredPushError(context);
+                                      }
+                                    } else {
+                                      await showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            title: const Text('댓글 작성 오류'),
+                                            content: const Text('댓글이 비어있습니다.\n입력 후 작성 버튼을 눌러주세요.'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                },
+                                                child: const Text('확인'),
+                                              ),
+                                            ],
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(20.0),
+                                            ),
+                                          );
+                                        },
+                                        barrierDismissible: true,
+                                      );
+                                    }
+                                  },
+                                  keyboardType: TextInputType.multiline,
+                                  minLines: 5,
+                                  maxLines: null,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            left: 900.0,
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                commentKey.currentState!.save();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                fixedSize: const Size(120.0, 100.0),
+                                elevation: 0.0,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(20.0),
+                                    bottomRight: Radius.circular(20.0),
+                                  ),
+                                ),
+                              ),
+                              child: const Text('작성'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  static Widget _comment(CommunityComment comment, StreamController<CommunityCommentList> commentListStream,
+      CommunityCommentList commentList) {
+    final StreamController<bool?> streamController = StreamController<bool?>.broadcast();
+    return StreamBuilder(
+      stream: streamController.stream,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          if (snapshot.data!) {
+            return _modifyComment(context, comment, streamController, commentListStream, commentList);
+          }
+        }
+
+        Widget modifyOption = const SizedBox();
+
+        if (accountManager.accountArguments.name == comment.name || accountManager.accountArguments.isAdmin == true) {
+          modifyOption = Row(
+            children: [
+              const SizedBox(width: 10.0),
+              Container(color: Colors.white, width: 1.0, height: 14.0),
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                ),
+                onPressed: () {
+                  streamController.add(true);
+                },
+                child: const Text('수정', style: TextStyle(color: Colors.white)),
+              ),
+              Container(color: Colors.white, width: 1.0, height: 14.0),
+              TextButton(
+                onPressed: () async {
+                  bool success = await HandleCommunity.deleteComment(context, comment.commentNum);
+                  if (success && context.mounted) {
+                    commentListStream.add(await HandleCommunity.getCommentList(
+                        context, {'post': commentList.postNum, 'page': commentList.pageNum}));
+                  } else {
+                    if (context.mounted) await HandleError.ifErroredPushError(context);
+                  }
+                },
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                ),
+                child: const Text('삭제', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(10.0, 0.0, 10.0, 10.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey, width: 1, strokeAlign: BorderSide.strokeAlignOutside),
+              borderRadius: const BorderRadius.all(Radius.circular(10.0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(10.0),
+                      topRight: Radius.circular(10.0),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10.0, 2.0, 10.0, 2.0),
+                    child: SizedBox(
+                      height: 20.0,
+                      child: Row(
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(right: 2.0),
+                            child: Icon(Icons.person, size: 14.0, color: Colors.white),
+                          ),
+                          Text(
+                            comment.name,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          const Expanded(child: SizedBox()),
+                          const Padding(
+                            padding: EdgeInsets.only(right: 2.0),
+                            child: Icon(Icons.date_range, size: 14.0, color: Colors.white),
+                          ),
+                          Text(
+                            comment.createDate == comment.updateDate
+                                ? DateFormat('yyyy-MM-dd HH:mm:ss').format(comment.createDate)
+                                : '${DateFormat('yyyy-MM-dd HH:mm:ss').format(comment.updateDate)} (수정됨)',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          modifyOption,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10.0, 2.0, 10.0, 2.0),
+                  child: Text(comment.content),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static Widget _modifyComment(BuildContext context, CommunityComment comment, StreamController<bool?> streamController,
+      StreamController<CommunityCommentList> commentListStream, CommunityCommentList commentList) {
+    TextEditingController commentController = TextEditingController();
+    GlobalKey<FormState> commentKey = GlobalKey<FormState>();
+    commentController.text = comment.content;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10.0),
+      child: SizedBox(
+        width: 1020.0,
+        height: 100.0,
+        child: Stack(
+          children: [
+            Positioned(
+              child: SizedBox(
+                width: 901.0,
+                height: 100.0,
+                child: Form(
+                  key: commentKey,
+                  child: TextFormField(
+                    controller: commentController,
+                    focusNode: FocusNode(
+                      onKey: (FocusNode node, RawKeyEvent evt) {
+                        if (!evt.isShiftPressed && evt.logicalKey.keyLabel == 'Enter') {
+                          if (evt is RawKeyDownEvent) {
+                            node.unfocus();
+                            commentKey.currentState!.save();
+                          }
+                          return KeyEventResult.handled;
+                        } else {
+                          return KeyEventResult.ignored;
+                        }
+                      },
+                    ),
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: const InputDecoration(
+                      hintText: '댓글 입력',
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(20.0),
+                          bottomLeft: Radius.circular(20.0),
+                        ),
+                        borderSide: BorderSide(color: Colors.grey),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(20.0),
+                          bottomLeft: Radius.circular(20.0),
+                        ),
+                        borderSide: BorderSide(color: Colors.grey),
+                      ),
+                      isDense: true,
+                    ),
+                    style: const TextStyle(fontSize: 14.0),
+                    onSaved: (value) async {
+                      if (commentController.text.isNotEmpty) {
+                        bool patchSuccess =
+                            await HandleCommunity.patchComment(context, comment.commentNum, commentController.text);
+                        if (patchSuccess && context.mounted) {
+                          commentListStream.add(await HandleCommunity.getCommentList(
+                              context, {'post': commentList.postNum, 'page': commentList.pageNum}));
+                          streamController.add(null);
+                        } else {
+                          await HandleError.ifErroredPushError(context);
+                        }
+                      } else {
+                        await showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text('댓글 작성 오류'),
+                              content: const Text('댓글이 비어있습니다.\n입력 후 수정 버튼을 눌러주세요.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('확인'),
+                                ),
+                              ],
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20.0),
+                              ),
+                            );
+                          },
+                          barrierDismissible: true,
+                        );
+                      }
+                    },
+                    keyboardType: TextInputType.multiline,
+                    minLines: 5,
+                    maxLines: null,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 900.0,
+              child: ElevatedButton(
+                onPressed: () async {
+                  commentKey.currentState!.save();
+                },
+                style: ElevatedButton.styleFrom(
+                  fixedSize: const Size(120.0, 100.0),
+                  elevation: 0.0,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(20.0),
+                      bottomRight: Radius.circular(20.0),
+                    ),
+                  ),
+                ),
+                child: const Text('수정'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class PostListWidget {
-  static List<Widget> widgetList(BuildContext context, CommunityPostList postList) {
+  static List<Widget> widget(BuildContext context, CommunityPostList communityPostList, List<String> categoryList) {
     List<Widget> list = [];
 
-    list.add(_menu(context, postList));
+    list.add(_menu(context, communityPostList));
     list.add(const SizedBox(height: 10.0));
     list.add(Material(
       elevation: 8.0,
@@ -97,9 +833,9 @@ class PostListWidget {
       child: Column(
         children: [
           const SizedBox(height: 5.0),
-          _postList(context, postList),
+          _postList(context, communityPostList, categoryList),
           const SizedBox(height: 5.0),
-          _pageNavigator(context, postList),
+          _pageNavigator(context, communityPostList),
           const SizedBox(height: 5.0),
         ],
       ),
@@ -116,7 +852,7 @@ class PostListWidget {
         const Expanded(flex: 1, child: SizedBox()),
         _searchBar(context, postList),
         const SizedBox(width: 10.0),
-        _postButton(),
+        _postButton(context),
       ],
     );
   }
@@ -139,7 +875,7 @@ class PostListWidget {
       height: 40.0,
       child: ElevatedButton(
           onPressed: () {
-            Navigator.pushReplacementNamed(context, '/community?page=1');
+            Navigator.pushNamedAndRemoveUntil(context, '/community', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(postList.recommend == null ? Colors.white : Colors.black),
@@ -169,7 +905,7 @@ class PostListWidget {
       height: 40.0,
       child: ElevatedButton(
           onPressed: () {
-            Navigator.pushReplacementNamed(context, '/community?page=1&recommend=true');
+            Navigator.pushNamedAndRemoveUntil(context, '/community?page=1&recommend=true', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(postList.recommend == true ? Colors.white : Colors.black),
@@ -282,7 +1018,7 @@ class PostListWidget {
                       String query = 'page=1&target=$target&keyword=$keyword';
                       if (postList.recommend == true) query = '$query&recommend=true';
 
-                      Navigator.pushReplacementNamed(context, '/community?$query');
+                      Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
                     } else {
                       await showDialog(
                         context: context,
@@ -321,7 +1057,7 @@ class PostListWidget {
                     String query = 'page=1&target=$target&keyword=$keyword';
                     if (postList.recommend == true) query = '$query&recommend=true';
 
-                    Navigator.pushReplacementNamed(context, '/community?$query');
+                    Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
                   } else {
                     await showDialog(
                       context: context,
@@ -365,10 +1101,49 @@ class PostListWidget {
     );
   }
 
-  static Widget _postButton() {
+  static Widget _postButton(BuildContext context) {
     return ElevatedButton(
-      onPressed: () {
-        // TODO: 글쓰기
+      onPressed: () async {
+        if (accountManager.get().name is! String && context.mounted) {
+          await showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: const Text('권한 없음'),
+                content: const Text('회원가입 및 로그인 후 회원만 이용 가능합니다.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('취소'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      await HandleAccount.signIn(context);
+                      if (context.mounted) Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      fixedSize: const Size(80.0, 40.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.0),
+                      ),
+                    ),
+                    child: const Text('로그인'),
+                  ),
+                ],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.0),
+                ),
+              );
+            },
+            barrierDismissible: true,
+          );
+        }
+
+        if (accountManager.get().name is String) {
+          if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, '/community/post', (_) => false);
+        }
       },
       style: ElevatedButton.styleFrom(
         fixedSize: const Size(80.0, 40.0),
@@ -380,33 +1155,33 @@ class PostListWidget {
     );
   }
 
-  static Widget _postList(BuildContext context, CommunityPostList postList) {
+  static Widget _postList(BuildContext context, CommunityPostList postList, List<String> categoryList) {
     List<Widget> list = List<Widget>.empty(growable: true);
 
-    list.add(_categoryButtons(context, postList));
+    list.add(_categoryButtons(context, postList, categoryList));
     list.add(_headerRow());
 
     if (postList.list == null) {
       list.add(Column(
         children: [
-          const SizedBox(height: 10.0),
+          const SizedBox(height: 30.0),
           const Text('글이 존재하지 않습니다.'),
-          const SizedBox(height: 10.0),
+          const SizedBox(height: 30.0),
           Container(width: 1040.0, height: 1.0, color: Colors.grey),
         ],
       ));
     } else if (postList.list!.isEmpty) {
       list.add(Column(
         children: [
-          const SizedBox(height: 10.0),
+          const SizedBox(height: 30.0),
           const Text('글이 존재하지 않습니다.'),
-          const SizedBox(height: 10.0),
+          const SizedBox(height: 30.0),
           Container(width: 1040.0, height: 1.0, color: Colors.grey),
         ],
       ));
     } else {
       for (var element in postList.list!) {
-        list.add(_postRow(element));
+        list.add(_postRow(context, postList, element));
       }
     }
     list.add(Container(width: 1040.0, height: 1.0, color: Colors.grey));
@@ -416,9 +1191,7 @@ class PostListWidget {
     );
   }
 
-  static Widget _categoryButtons(BuildContext context, CommunityPostList postList) {
-    // TODO: GET category
-    List<String> categoryList = ['한글됨?', 'test2', 'test3', 'test4', 'test5'];
+  static Widget _categoryButtons(BuildContext context, CommunityPostList postList, List<String> categoryList) {
     List<Widget> categoryButtons = [const SizedBox(width: 10.0), _allCategoryButton(context, postList)];
 
     for (var element in categoryList) {
@@ -446,7 +1219,7 @@ class PostListWidget {
           if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
           if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-          Navigator.pushReplacementNamed(context, '/community?$query');
+          Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
         },
         style: ButtonStyle(
           foregroundColor: MaterialStateProperty.all(postList.category == null ? Colors.white : Colors.black),
@@ -475,7 +1248,7 @@ class PostListWidget {
         if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
         if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-        Navigator.pushReplacementNamed(context, '/community?$query');
+        Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
       },
       style: ButtonStyle(
         foregroundColor: MaterialStateProperty.all(postList.category == category ? Colors.white : Colors.black),
@@ -515,34 +1288,76 @@ class PostListWidget {
     );
   }
 
-  static Widget _postRow(CommunityPost communityPost) {
-    DateTime createDate = communityPost.createDate;
+  static Widget _postRow(BuildContext context, CommunityPostList postList, CommunityPost post) {
+    DateTime createDate = post.createDate!;
     late String createDateString;
 
     if (createDate.difference(DateTime.now()).inHours > -24) {
-      createDateString = DateFormat('HH:dd').format(createDate);
+      createDateString = DateFormat('HH:mm').format(createDate);
     } else {
       createDateString = DateFormat('yyyy-MM-dd').format(createDate);
     }
 
-    return Column(
-      children: [
-        const SizedBox(height: 10.0),
-        Row(
-          children: [
-            _expanded(Text(communityPost.postNum.toString(), textAlign: TextAlign.center)),
-            // TODO: TITLE 클릭 시 글로 이동
-            _expanded(Text(communityPost.title), 6),
-            // TODO: NAME 클릭 시 글쓴이 검색으로 이동
-            _expanded(Text(communityPost.name), 2),
-            _expanded(Text(createDateString, textAlign: TextAlign.center)),
-            _expanded(Text(communityPost.hit.toString(), textAlign: TextAlign.center)),
-            _expanded(Text(communityPost.recommend.toString(), textAlign: TextAlign.center)),
-          ],
-        ),
-        const SizedBox(height: 10.0),
-        Container(width: 1040.0, height: 1.0, color: Colors.grey),
-      ],
+    return TextButton(
+      onPressed: () {
+        String query = 'post=${post.postNum}';
+        if (postList.category is String) query = '$query&category=${postList.category}';
+        if (postList.target is String) query = '$query&category=${postList.target}';
+        if (postList.keyword is String) query = '$query&keyword=${postList.keyword}';
+        if (postList.recommend == true) query = '$query&recommend=true';
+
+        WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+          Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
+        });
+      },
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.black,
+        padding: EdgeInsets.zero,
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 10.0),
+          Row(
+            children: [
+              _expanded(Text(post.postNum.toString(), textAlign: TextAlign.center)),
+              _expanded(
+                  Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(color: Colors.grey, borderRadius: BorderRadius.circular(5.0)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(1.0),
+                          child: Text(
+                            post.category!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.white, fontSize: 10.0),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 2.0),
+                      Text(post.title!),
+                      post.commentCount! > 0
+                          ? Padding(
+                              padding: const EdgeInsets.only(left: 2.0),
+                              child: Text(
+                                '[${post.commentCount.toString()}]',
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                            )
+                          : const SizedBox(),
+                    ],
+                  ),
+                  6),
+              _expanded(Text(post.name!), 2),
+              _expanded(Text(createDateString, textAlign: TextAlign.center)),
+              _expanded(Text(post.hit.toString(), textAlign: TextAlign.center)),
+              _expanded(Text(post.recommend.toString(), textAlign: TextAlign.center)),
+            ],
+          ),
+          const SizedBox(height: 10.0),
+          Container(width: 1040.0, height: 1.0, color: Colors.grey),
+        ],
+      ),
     );
   }
 
@@ -606,13 +1421,13 @@ class PostListWidget {
         height: 30.0,
         child: ElevatedButton(
           onPressed: () {
-            String query = 'page=${postList.pageNum.toString()}';
+            String query = 'page=${pageNum.toString()}';
             if (postList.category is String) query = '$query&category=${Uri.encodeComponent(postList.category!)}';
             if (postList.target is String) query = '$query&target=${postList.target}';
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
             if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-            Navigator.pushReplacementNamed(context, '/community?$query');
+            Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(postList.pageNum == pageNum ? Colors.white : Colors.black),
@@ -645,7 +1460,7 @@ class PostListWidget {
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
             if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-            Navigator.pushReplacementNamed(context, '/community?$query');
+            Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(Colors.black),
@@ -678,7 +1493,7 @@ class PostListWidget {
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
             if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-            Navigator.pushReplacementNamed(context, '/community?$query');
+            Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(Colors.black),
@@ -718,7 +1533,7 @@ class PostListWidget {
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
             if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-            Navigator.pushReplacementNamed(context, '/community?$query');
+            Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(Colors.black),
@@ -758,7 +1573,7 @@ class PostListWidget {
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
             if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
 
-            Navigator.pushReplacementNamed(context, '/community?$query');
+            Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
           style: ButtonStyle(
             foregroundColor: MaterialStateProperty.all(Colors.black),
@@ -774,6 +1589,313 @@ class PostListWidget {
           child: const Icon(Icons.keyboard_arrow_right),
         ),
       ),
+    );
+  }
+}
+
+class WritePostPage extends StatefulWidget {
+  final Map<String, dynamic> query;
+
+  const WritePostPage(this.query, {super.key});
+
+  @override
+  State<WritePostPage> createState() => _WritePostPageState();
+}
+
+class _WritePostPageState extends State<WritePostPage> {
+  @override
+  void initState() {
+    for (var element in widget.query.keys) {
+      if (element != 'additional') {
+        WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+          Navigator.pushNamedAndRemoveUntil(context, '/community/post', (_) => false);
+        });
+      }
+    }
+
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: CustomAppBar.widget(context),
+      body: WritePost.widget(context, widget.query['additional']),
+    );
+  }
+}
+
+class WritePost {
+  static String? selectedCategory;
+
+  static Widget widget(BuildContext context, Map<String, dynamic>? query) {
+    List<Widget> list = [];
+
+    final TextEditingController titleController = TextEditingController();
+    final TextEditingController contentController = TextEditingController();
+
+    list.add(_postForm(context, query, titleController, contentController));
+    list.add(const SizedBox(height: 10.0));
+    list.add(_buttons(context, query, titleController, contentController));
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(200.0, 10.0, 200.0, 10.0),
+      itemBuilder: (BuildContext context, int index) {
+        return list[index];
+      },
+      itemCount: list.length,
+    );
+  }
+
+  static Widget _buttons(BuildContext context, Map<String, dynamic>? query, TextEditingController titleController,
+      TextEditingController contentController) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        _cancelButton(context),
+        const SizedBox(width: 10),
+        _submitButton(context, query, titleController, contentController),
+      ],
+    );
+  }
+
+  static Widget _cancelButton(BuildContext context) {
+    return ElevatedButton(
+      onPressed: () {
+        WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+          Navigator.pushNamedAndRemoveUntil(context, '/community', (_) => false);
+        });
+      },
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.black,
+        backgroundColor: Colors.white,
+        fixedSize: const Size(80.0, 40.0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.0),
+        ),
+      ),
+      child: const Text('취소'),
+    );
+  }
+
+  static Widget _submitButton(BuildContext context, Map<String, dynamic>? query, TextEditingController titleController,
+      TextEditingController contentController) {
+    return ElevatedButton(
+      onPressed: () async {
+        if (accountManager.get().name is! String && context.mounted) {
+          await showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: const Text('권한 없음'),
+                content: const Text('회원가입 및 로그인 후 회원만 이용 가능합니다.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('취소'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      await HandleAccount.signIn(context);
+                      if (context.mounted) Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      fixedSize: const Size(80.0, 40.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.0),
+                      ),
+                    ),
+                    child: const Text('로그인'),
+                  ),
+                ],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.0),
+                ),
+              );
+            },
+            barrierDismissible: true,
+          );
+        }
+
+        if (selectedCategory is String && titleController.text.isNotEmpty && contentController.text.isNotEmpty) {
+          if (accountManager.accountArguments.name is String) {
+            if (query == null) {
+              int? postSuccess;
+              if (context.mounted) {
+                postSuccess = await HandleCommunity.postPost(
+                    context, selectedCategory!, titleController.text, contentController.text);
+              }
+              if (postSuccess is int && context.mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                  Navigator.pushNamedAndRemoveUntil(context, '/community?post=$postSuccess', (_) => false);
+                });
+              } else {
+                await HandleError.ifErroredPushError(context);
+              }
+            } else {
+              late bool patchSuccess;
+              if (context.mounted) {
+                patchSuccess = await HandleCommunity.patchPost(
+                    context, query['postNum']!, selectedCategory!, titleController.text, contentController.text);
+              }
+              if (patchSuccess && context.mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, '/community?post=${query['postNum'].toString()}', (_) => false);
+                });
+              } else {
+                await HandleError.ifErroredPushError(context);
+              }
+            }
+          }
+        } else {
+          if (context.mounted) {
+            await showDialog(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: const Text('작성 오류'),
+                  content: const Text('카테고리 선택이 안되었거나\n제목 및 본문이 입력되지 않았습니다.\n선택 및 입력 후 작성 버튼을 누르세요.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text('확인'),
+                    ),
+                  ],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20.0),
+                  ),
+                );
+              },
+              barrierDismissible: true,
+            );
+          }
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        fixedSize: const Size(80.0, 40.0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.0),
+        ),
+      ),
+      child: const Text('작성'),
+    );
+  }
+
+  static Widget _postForm(BuildContext context, Map<String, dynamic>? query, TextEditingController titleController,
+      TextEditingController contentController) {
+    return Material(
+      elevation: 8.0,
+      color: Colors.white,
+      borderRadius: const BorderRadius.all(Radius.circular(20.0)),
+      child: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _categorySelect(context, query),
+            _titleField(query, titleController),
+            const SizedBox(height: 10.0),
+            _contentField(query, contentController),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _categorySelect(BuildContext context, Map<String, dynamic>? query) {
+    return FutureBuilder(
+      future: HandleCommunity.getCategoryList(context),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          List<String> categoryList = snapshot.data!;
+          final StreamController<String?> selectedCategoryStreamController = StreamController<String?>.broadcast();
+
+          return StreamBuilder(
+              stream: selectedCategoryStreamController.stream,
+              builder: (context, snapshot) {
+                selectedCategory = snapshot.data;
+                List<Widget> children = [];
+                if (query != null) {
+                  selectedCategoryStreamController.add(query['category']);
+                }
+                for (var element in categoryList) {
+                  children.add(
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0.0, 0.0, 10.0, 10.0),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: snapshot.data == element ? Colors.white : Colors.black,
+                          backgroundColor: snapshot.data == element ? Colors.green : Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                          ),
+                        ),
+                        onPressed: () {
+                          selectedCategoryStreamController.add(element);
+                        },
+                        child: Text(element),
+                      ),
+                    ),
+                  );
+                }
+
+                return Wrap(
+                  children: children,
+                );
+              });
+        } else {
+          return const SizedBox();
+        }
+      },
+    );
+  }
+
+  static Widget _titleField(Map<String, dynamic>? query, TextEditingController titleController) {
+    titleController.text = query == null ? '' : query['title']!;
+    return TextFormField(
+      controller: titleController,
+      textAlignVertical: TextAlignVertical.center,
+      decoration: const InputDecoration(
+        hintText: '제목',
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20.0)),
+          borderSide: BorderSide(color: Colors.green),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20.0)),
+          borderSide: BorderSide(color: Colors.grey),
+        ),
+      ),
+      autofocus: true,
+    );
+  }
+
+  static Widget _contentField(Map<String, dynamic>? query, TextEditingController contentController) {
+    contentController.text = query == null ? '' : query['content']!;
+    return TextFormField(
+      controller: contentController,
+      textAlignVertical: TextAlignVertical.top,
+      decoration: const InputDecoration(
+        hintText: '본문 입력',
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20.0)),
+          borderSide: BorderSide(color: Colors.green),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20.0)),
+          borderSide: BorderSide(color: Colors.grey),
+        ),
+        isDense: true,
+      ),
+      style: const TextStyle(fontSize: 14.0),
+      keyboardType: TextInputType.multiline,
+      minLines: 30,
+      maxLines: null,
     );
   }
 }
