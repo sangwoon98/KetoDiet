@@ -9,7 +9,7 @@ class CommunityDB(models.Model):
     title=models.CharField(max_length=50)
     content=models.CharField(max_length=1000)
     hit=models.IntegerField(default=0)
-    recommend=models.CharField(max_length=2000)
+    recommend = models.JSONField(default=list)
     comment_count=models.IntegerField(default=0)
     create_date = models.DateTimeField(default=timezone.now)
     update_date = models.DateTimeField(default=timezone.now)
