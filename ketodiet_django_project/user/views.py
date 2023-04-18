@@ -29,7 +29,7 @@ class AccountView(APIView):
     
     def access_token_to_id(self, request):
         access_token = request.headers.get('Authorization', '').split()[1]
-        data = self.access_token_validation(access_token)
+        data = AccountView.access_token_validation(self, access_token)
         if data is None: # 토큰값이 없거나 잘못돼서 id값을 가져오지 못했을때
             return Response({'error': 'Invalid access token.'}, status=status.HTTP_401_UNAUTHORIZED)
         id = data.get('id')

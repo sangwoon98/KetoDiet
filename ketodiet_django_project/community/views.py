@@ -23,6 +23,7 @@ from rest_framework.views import APIView
 
 from django.db.models import Q
 import json
+import urllib.parse
 
 # DB 모델 인스턴스나 QuerySet 데이터를 JSON으로 반환 , 출력값: fields로 고정, data={'name':name}형태로 삽입후 직렬화 가능,
 class CommunityDBSerializer(serializers.ModelSerializer): 
@@ -54,6 +55,7 @@ class CommunityList(generics.ListAPIView):
         target = self.request.query_params.get('target')
         keyword = self.request.query_params.get('keyword')
         recommand = self.request.query_params.get('recommand')
+
         
         queryset = CommunityDB.objects.all().order_by('-post_num')
         
@@ -64,6 +66,9 @@ class CommunityList(generics.ListAPIView):
         #     queryset = queryset.filter(recommand=True)
         
         if target and keyword:
+            target=urllib.parse.unquote(target) # URL 디코딩
+            keyword=urllib.parse.unquote(keyword)
+            
             if target == 'all': # 댓글 은 임시 삭제 조치
                 queryset = queryset.filter(Q(title__contains=keyword) | Q(name__contains=keyword) | Q(content__contains=keyword)).distinct()
             elif target == 'title':
@@ -166,13 +171,13 @@ class CommunityView(APIView):
                 http_request.GET['post_num'] = post_num
                 comment_serializer = CommunityCommentList.as_view()(http_request).data
                 #_________________________________________________________________
-                return Response({'page_number':page_number, 'category':categories, 'post':community_serializer.data,'comment':comment_serializer,'page':list_serializer}, status=status.HTTP_200_OK) 
+                return Response({'page_num':page_number, 'category':categories, 'post':community_serializer.data,'comment':comment_serializer,'page':list_serializer}, status=status.HTTP_200_OK) 
             except: 
                 return Response(status=status.HTTP_400_BAD_REQUEST) # post_num값이 잘못됨
            
 
     def post(self, request):
-        id = AccountView.access_token_to_id(request)
+        id = AccountView.access_token_to_id(self, request)
         try:
             name= UserDB.objects.get(id=id).name   
         except:
@@ -184,14 +189,14 @@ class CommunityView(APIView):
         if serializer.is_valid():
             serializer.save()
             #post_num , 생성날짜 똑같이맞춰주고, 글조회시 커맨트가 없으면 빈리스트
-            return Response({'post_number':serializer.instance.post_num},status=status.HTTP_201_CREATED)
+            return Response({'post_num':serializer.instance.post_num},status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) # 입력값 오류
 
 
     def patch(self, request):
         try:
-            id = AccountView.access_token_to_id(request)
+            id = AccountView.access_token_to_id(self, request)
             post_num = request.query_params.get('post_num')
             community = CommunityDB.objects.get(post_num=post_num)
         except:
@@ -213,7 +218,7 @@ class CommunityView(APIView):
 
 
     def delete(self, request):
-        id = AccountView.access_token_to_id(request)
+        id = AccountView.access_token_to_id(self, request)
         post_num = request.query_params.get('post_num')
         try:
             community = CommunityDB.objects.get(post_num=post_num)
@@ -285,7 +290,7 @@ class Community_comment(APIView):
         return Response({'comment':serializer}, status=status.HTTP_200_OK)
     
     def post(self, request):
-        id = AccountView.access_token_to_id(request)
+        id = AccountView.access_token_to_id(self, request)
         try:
             qs = UserDB.objects.get(id=id)
             name = qs.name
@@ -304,7 +309,7 @@ class Community_comment(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN) # 알수 없는 사용자
     
     def patch(self, request):
-        id = AccountView.access_token_to_id(request)
+        id = AccountView.access_token_to_id(self, request)
         if CommunitycommentDB.id == id:
             try:
                 comment_num = request.query_params.get('comment_num')
@@ -325,7 +330,7 @@ class Community_comment(APIView):
             
 
     def delete(self, request):
-        id = AccountView.access_token_to_id(request)
+        id = AccountView.access_token_to_id(self, request)
         comment_num = request.query_params.get('comment_num')
         try:
             comment = CommunitycommentDB.objects.get(comment_num=comment_num)
@@ -361,7 +366,7 @@ class Category(APIView):
         return Response({'categories': categories})
     
     def post(self, request):
-        id = AccountView.access_token_to_id(request)
+        id = AccountView.access_token_to_id(self, request)
         try:
             isAdmin = UserDB.objects.get(id=id).isAdmin
             if isAdmin:
@@ -379,7 +384,7 @@ class Category(APIView):
             return Response({'success': False, 'message': 'User does not exist'})
     
     def patch(self, request):
-        id = AccountView.access_token_to_id(request)
+        id = AccountView.access_token_to_id(self, request)
         try:
             isAdmin = UserDB.objects.get(id=id).isAdmin
             if isAdmin:
@@ -399,7 +404,7 @@ class Category(APIView):
             return Response(status= status.HTTP_404_NOT_FOUND)
         
     def delete(self, request):
-        id = AccountView.access_token_to_id(request)
+        id = AccountView.access_token_to_id(self, request)
         try:
             isAdmin = UserDB.objects.get(id=id).isAdmin
             if isAdmin:
@@ -424,7 +429,7 @@ class Recommend(APIView):
         return Response({'recommend': recommend})
     
     def post(self, request):
-        user_id = AccountView.access_token_to_id(request)
+        user_id = AccountView.access_token_to_id(self, request)
         if user_id:
             post_num = request.query_params.get('post_num')
             community = CommunityDB.objects.get(post_num=post_num)
@@ -440,7 +445,7 @@ class Recommend(APIView):
 
         
     def delete(self, request):
-        user_id = AccountView.access_token_to_id(request)
+        user_id = AccountView.access_token_to_id(self, request)
         if user_id:
             post_num = request.query_params.get('post_num')
             community = CommunityDB.objects.get(post_num=post_num)
