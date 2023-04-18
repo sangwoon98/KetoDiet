@@ -1,4 +1,5 @@
 from http.client import BAD_REQUEST
+from django.utils import timezone
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -28,11 +29,17 @@ class CommunityDBSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommunityDB
         fields = '__all__' # 모든값들을 직렬화 시킴
+        
+        def update(self, instance, validated_data):
+            instance = super().update(instance, validated_data)
+            instance.update_date = timezone.now()
+            instance.save()
+            return instance
 
 class CommunityDBSerializerNoContent(serializers.ModelSerializer):
     class Meta:
         model = CommunityDB
-        fields = 'post_num','category','title','name','create_date','hit','recommend','comment_count' # 모든값들을 직렬화 시킴
+        fields = 'post_num','category','title','name','create_date','update_date','hit','recommend','comment_count' # 모든값들을 직렬화 시킴
         
 
 class CommunityListPagination(pagination.PageNumberPagination): # DRF에서 제공하는 pagination을 상속
@@ -53,12 +60,12 @@ class CommunityList(generics.ListAPIView):
         if category:
             queryset = queryset.filter(category=category)
         
-        if recommand:
-            queryset = queryset.filter(recommand=True)
+        # if recommand:
+        #     queryset = queryset.filter(recommand=True)
         
         if target and keyword:
-            if target == 'all':
-                queryset = queryset.filter(Q(title__contains=keyword) | Q(name__contains=keyword) | Q(content__contains=keyword) | Q(comment__content__contains=keyword)).distinct()
+            if target == 'all': # 댓글 은 임시 삭제 조치
+                queryset = queryset.filter(Q(title__contains=keyword) | Q(name__contains=keyword) | Q(content__contains=keyword)).distinct()
             elif target == 'title':
                 queryset = queryset.filter(title__contains=keyword)
             elif target == 'name':
@@ -132,6 +139,8 @@ class CommunityView(APIView):
             
                 return Response({'page_number':1, 'category':categories, 'post':{"detail": "Invalid page."},'comment':{"detail": "Invalid page."}, 'page':list_serializer})
             
+            
+            
             try:
                 #__________________________글_______________________________________
                 
@@ -152,7 +161,6 @@ class CommunityView(APIView):
                 import math
                 all_list=CommunitycommentDB.objects.filter(post_num=post_num)
                 comment_page=math.ceil(len(all_list)/20)
-                print('comment_page: ',comment_page)
                 http_request.GET['page'] = comment_page
                 http_request.GET['post_num'] = post_num
                 comment_serializer = CommunityCommentList.as_view()(http_request).data
@@ -163,25 +171,29 @@ class CommunityView(APIView):
            
 
     def post(self, request):
-        id = 1
-        print('1')
+        id = AccountView.access_token_to_id
         try:
             name= UserDB.objects.get(id=id).name   
-            data = self.body_get_multy_value(request, ['title', 'content','category'])
-            serializer = CommunityDBSerializer(data={'id':id, 'name': name, 'title': data[0], 'content': data[1], 'category':data[2]}) 
-            if serializer.is_valid():
-                serializer.save()
-                return Response(status=status.HTTP_201_CREATED)
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) # 입력값 오류
         except:
             return Response(status=status.HTTP_403_FORBIDDEN) # 알수 없는 사용자
             
+        data = self.body_get_multy_value(request, ['title', 'content','category'])
+        serializer = CommunityDBSerializer(data={'id':id, 'name': name, 'title': data[0], 'content': data[1], 'category':data[2]}) 
+        if serializer.is_valid():
+            serializer.save()
+            #post_num , 생성날짜 똑같이맞춰주고, 글조회시 커맨트가 없으면 빈리스트
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) # 입력값 오류
+
 
     def patch(self, request):
-        id = AccountView.access_token_to_id
-        post_num = request.query_params.get('post_num')
-        community = CommunityDB.objects.get(post_num)
+        try:
+            id = AccountView.access_token_to_id
+            post_num = request.query_params.get('post_num')
+            community = CommunityDB.objects.get(post_num=post_num)
+        except:
+            return Response( status=status.HTTP_404_NOT_FOUND)
         
         if community.id == id: # 본인이 작성한게 맞다면
             data = {}
@@ -201,19 +213,32 @@ class CommunityView(APIView):
         id = AccountView.access_token_to_id
         post_num = request.query_params.get('post_num')
         try:
-            community = CommunityDB.objects.get(post_num)
+            community = CommunityDB.objects.get(post_num=post_num)
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        if community:
+            
             if community.id == id:
                 community.delete()
+                try:
+                    comment_list=CommunitycommentDB.objects.filter(post_num=post_num)
+                except:
+                    comment_list=None
+                if comment_list:
+                    comment_list.delete()
                 return Response(status=status.HTTP_200_OK)
             else:
                 if UserDB.objects.get(id).isAdmin == True:
                     community.delete()
+                    try:
+                        comment_list=CommunitycommentDB.objects.filter(post_num=post_num)
+                    except:
+                        comment_list=None
+                    if comment_list:
+                        comment_list.delete()
                     return Response(status= status.HTTP_200_OK)
                 else:
                     return Response(status=status.HTTP_403_FORBIDDEN) # 권한 없음
-        except:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-            
 
 class CommentDBSerializer(serializers.ModelSerializer):
     class Meta:
@@ -261,12 +286,12 @@ class Community_comment(APIView):
         try:
             qs = UserDB.objects.get(id=id)
             name = qs.name
-            content = request.body.get('content')
+            content = request.data.get('content')
             post_num = request.query_params.get('post_num')
             serializer = CommentDBSerializer(data={'id':id, 'name':name, 'content':content, 'post_num':post_num})
             if serializer.is_valid():
-                serializer.save()
                 com_qs = CommunityDB.objects.get(post_num=post_num)
+                serializer.save()
                 com_qs.comment_count+=1
                 com_qs.save()
                 return Response(status=status.HTTP_201_CREATED) #정상
@@ -300,18 +325,18 @@ class Community_comment(APIView):
         id = AccountView.access_token_to_id
         comment_num = request.query_params.get('comment_num')
         try:
-            comment = CommunitycommentDB.objects.get(comment_num)
+            comment = CommunitycommentDB.objects.get(comment_num=comment_num)
             post_num = comment.post_num
             if comment.id == id:
-                comment.delete()
                 com_qs = CommunityDB.objects.get(post_num=post_num)
+                comment.delete()
                 com_qs.comment_count-=1
                 com_qs.save()
                 return Response(status=status.HTTP_200_OK)
             else:
                 if UserDB.objects.get(id).isAdmin == True:
-                    comment.delete()
                     com_qs = CommunityDB.objects.get(post_num=post_num)
+                    comment.delete()
                     com_qs.comment_count-=1
                     com_qs.save()
                     return Response(status= status.HTTP_200_OK)
