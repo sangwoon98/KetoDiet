@@ -121,6 +121,18 @@ class CommunityView(APIView):
                 qs = CommunityDB.objects.get(post_num=post_num)
                 qs.hit += 1
                 qs.save()
+            except:
+                http_request = HttpRequest()
+                http_request.method = 'GET'
+                http_request.META['SERVER_NAME'] = request.META['SERVER_NAME']
+                http_request.META['SERVER_PORT'] = request.META['SERVER_PORT']
+                all_list=CommunityDB.objects.all().order_by('-post_num')
+                http_request.GET['page'] = 1
+                list_serializer = CommunityList.as_view()(http_request).data # list 가져다줄때 해당 목록만 가져다줌
+            
+                return Response({'page_number':1, 'category':categories, 'post':{"detail": "Invalid page."},'comment':{"detail": "Invalid page."}, 'page':list_serializer})
+            
+            try:
                 #__________________________글_______________________________________
                 
                 community_serializer = CommunityDBSerializer(qs)
@@ -151,18 +163,10 @@ class CommunityView(APIView):
            
 
     def post(self, request):
-        id = AccountView.access_token_to_id
+        id = 1
+        print('1')
         try:
-            name= UserDB.objects.get(id=id).name
-            recommend = request.boby.get('recommend')
-            print(recommend)
-            if recommend:
-                recommend = json.loads(CommunityDB.recommend)
-                if id not in recommend:
-                    recommend.append(id)
-                    recommend = json.dumps(recommend)
-                    recommend.save()
-                
+            name= UserDB.objects.get(id=id).name   
             data = self.body_get_multy_value(request, ['title', 'content','category'])
             serializer = CommunityDBSerializer(data={'id':id, 'name': name, 'title': data[0], 'content': data[1], 'category':data[2]}) 
             if serializer.is_valid():
@@ -392,20 +396,20 @@ class Recommend(APIView):
         return Response({'recommend': recommend})
     
     def post(self, request):
-        user_id = AccountView.access_token_to_id
+        user_id = 5
         if user_id:
             post_num = request.query_params.get('post_num')
             community = CommunityDB.objects.get(post_num=post_num)
-            recommends = json.loads(community.recommend)
-            if isinstance(recommends, int):
-                recommends = []
+            recommends = community.recommend
             if user_id not in recommends:
                 recommends.append(user_id)
-                community.recommend = json.dumps(recommends)
+                community.recommend = recommends
                 community.save()
             return Response({'recommend': community.recommend})
         else:
-            return Response(status= status.HTTP_403_FORBIDDEN)
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+
         
     def delete(self, request):
         user_id = AccountView.access_token_to_id
