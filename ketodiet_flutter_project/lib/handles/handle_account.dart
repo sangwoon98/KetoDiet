@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 import '../secret.dart';
 import '../modules/handle.dart';
@@ -77,7 +77,7 @@ class HandleAccount {
         );
 
         if (response.statusCode == 200) {
-          accountManager.set(name: jsonDecode(response.body)['name']);
+          accountManager.set(name: jsonDecode(utf8.decode(response.bodyBytes))['name']);
         } else {
           accountManager.clear();
           await TokenManagerProvider.instance.manager.clear();
@@ -91,13 +91,13 @@ class HandleAccount {
       try {
         accountManager.set(oAuthToken: await UserApi.instance.loginWithKakaoTalk());
       } catch (error) {
-        errorManager.set(ErrorArgs('$error', 'handle_account.dart', 'HandleAccount.init'));
+        errorManager.set(ErrorArgs('$error', 'handle_account.dart', 'HandleAccount.signIn'));
       }
     } else {
       try {
         accountManager.set(oAuthToken: await UserApi.instance.loginWithKakaoAccount());
       } catch (error) {
-        errorManager.set(ErrorArgs('$error', 'handle_account.dart', 'HandleAccount.init'));
+        errorManager.set(ErrorArgs('$error', 'handle_account.dart', 'HandleAccount.signIn'));
       }
     }
 
@@ -152,7 +152,7 @@ class HandleAccount {
       );
 
       if (response.statusCode == 200) {
-        accountManager.set(name: jsonDecode(response.body)['name']);
+        accountManager.set(name: jsonDecode(utf8.decode(response.bodyBytes))['name']);
       } else if (response.statusCode == 404) {
         if (context.mounted) await post(context);
       } else {

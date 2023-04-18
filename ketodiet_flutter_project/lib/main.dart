@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kakao_flutter_sdk/kakao_flutter_sdk.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:url_strategy/url_strategy.dart'; // URL Path에 '#' 없애는 Package
 
 import 'secret.dart';

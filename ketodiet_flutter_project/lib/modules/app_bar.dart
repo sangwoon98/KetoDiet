@@ -100,6 +100,10 @@ class Actions {
       StreamBuilder(
         stream: accountManager.nameStreamController.stream,
         builder: (context, snapshot) {
+          if (snapshot.data != accountManager.accountArguments.name) {
+            accountManager.nameStreamController.add(accountManager.accountArguments.name);
+            accountManager.oAuthTokenStreamController.add(accountManager.accountArguments.oAuthToken);
+          }
           if (!snapshot.hasData) {
             return signInButton(context);
           } else {

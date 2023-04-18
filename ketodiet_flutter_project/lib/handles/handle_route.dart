@@ -38,6 +38,8 @@ class HandleRoute {
         return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => AboutUsPage(query));
       case '/community':
         return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => CommunityPage(query));
+      case '/community/post':
+        return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => WritePostPage(query));
       case '/challenge':
         return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => ChallengePage(query));
       case '/test':
