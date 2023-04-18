@@ -14,6 +14,12 @@ class CommunityDB(models.Model):
     create_date = models.DateTimeField(default=timezone.now)
     update_date = models.DateTimeField(default=timezone.now)
     
+    def save(self, *args, **kwargs):
+        if not self.post_num:
+            self.create_date = timezone.now()
+        self.update_date = self.create_date
+        super().save(*args, **kwargs)
+    
     def __str__(self):
         return self.title
     
