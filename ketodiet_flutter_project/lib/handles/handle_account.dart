@@ -12,14 +12,16 @@ AccountManager accountManager = AccountManager();
 
 class AccountArgs {
   OAuthToken? oAuthToken;
+  dynamic uid;
   String? name;
   bool? isAdmin;
 
-  AccountArgs({this.oAuthToken, this.name, this.isAdmin});
+  AccountArgs({this.oAuthToken, this.uid, this.name, this.isAdmin});
 }
 
 class AccountManager {
   StreamController<OAuthToken?> oAuthTokenStreamController = StreamController<OAuthToken?>.broadcast();
+  StreamController<dynamic> uidStreamController = StreamController<dynamic>.broadcast();
   StreamController<String?> nameStreamController = StreamController<String?>.broadcast();
   StreamController<bool?> isAdminStreamController = StreamController<bool?>.broadcast();
   AccountArgs accountArguments = AccountArgs();
@@ -27,6 +29,15 @@ class AccountManager {
   AccountManager() {
     oAuthTokenStreamController.stream.listen((event) {
       accountArguments.oAuthToken = event;
+      if (event != null) {
+        dynamic uid = jsonDecode(utf8.decode(base64Decode(event.idToken!.split('.')[1])))['sub'];
+
+        uidStreamController.add(uid);
+        accountArguments.uid = uid;
+      }
+    });
+    uidStreamController.stream.listen((event) {
+      accountArguments.uid = event;
     });
     nameStreamController.stream.listen((event) {
       accountArguments.name = event;
@@ -40,11 +51,16 @@ class AccountManager {
     return accountArguments;
   }
 
-  void set({AccountArgs? accountArgs, OAuthToken? oAuthToken, String? name, bool? isAdmin}) {
+  void set({AccountArgs? accountArgs, OAuthToken? oAuthToken, dynamic uid, String? name, bool? isAdmin}) {
     if (accountArgs == null) {
       if (oAuthToken != null) {
         oAuthTokenStreamController.add(oAuthToken);
         accountArguments.oAuthToken = oAuthToken;
+      }
+
+      if (uid != null) {
+        uidStreamController.add(uid);
+        accountArguments.uid = uid;
       }
 
       if (name != null) {
@@ -58,9 +74,11 @@ class AccountManager {
       }
     } else {
       oAuthTokenStreamController.add(accountArgs.oAuthToken);
+      uidStreamController.add(accountArgs.uid);
       nameStreamController.add(accountArgs.name);
       isAdminStreamController.add(accountArgs.isAdmin);
       accountArguments.oAuthToken = oAuthToken;
+      accountArguments.uid = uid;
       accountArguments.name = name;
       accountArguments.isAdmin = isAdmin;
     }
@@ -68,6 +86,7 @@ class AccountManager {
 
   void clear() {
     oAuthTokenStreamController.add(null);
+    uidStreamController.add(null);
     nameStreamController.add(null);
     isAdminStreamController.add(null);
   }

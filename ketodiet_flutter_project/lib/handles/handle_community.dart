@@ -247,33 +247,16 @@ class HandleCommunity {
 
       if (response.statusCode == 200) {
         Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
-        // print(body);
-        // print(1);
+
         communityForum.communityPost = CommunityPost.init(query, body['post']);
-        // print(2);
         communityForum.communityPostList = CommunityPostList.init(query, body['page']);
-        // print(3);
         communityForum.communityCommentList = CommunityCommentList.init(query, body['comment']);
-        // print(4);
         communityForum.categoryList = CategoryList.init(body['category']);
-        // print('!');
+        if (body.containsKey('page_num')) communityForum.communityPostList!.pageNum = body['page_num'];
       }
     }
 
     return communityForum;
-  }
-
-  static Future<CommunityCommentList> getCommentList(BuildContext context, Map<String, dynamic> query) async {
-    http.Response response =
-        await http.get(Uri.http(backendDomain, '/api/community/comment', _encodeQueryComponent(query)));
-
-    if (response.statusCode == 200) {
-      Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
-
-      return CommunityCommentList.init(query, body['comment'])!;
-    } else {
-      return CommunityCommentList(postNum: query['page']);
-    }
   }
 
   static Future<List<String>?> getCategoryList(BuildContext context) async {
@@ -282,9 +265,158 @@ class HandleCommunity {
     if (response.statusCode == 200) {
       Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
 
-      return CategoryList.init(body['categories']);
+      return CategoryList.init(body['categories']); // TODO:
     } else {
       return [];
+    }
+  }
+
+  static Future<List<String>?> postCategory(BuildContext context, String categoryName) async {
+    http.Response response = await http.post(
+      Uri.http(backendDomain, '/api/community/category'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+      body: jsonEncode({
+        'category': categoryName,
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+
+      return CategoryList.init(body['categories']); // TODO:
+    } else if (response.statusCode == 400 && context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('카테고리 생성 오류'),
+            content: const Text('중복된 카테고리명 이거나 잘못된 값을 입력했습니다.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('확인'),
+              ),
+            ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+          );
+        },
+        barrierDismissible: true,
+      );
+      return null;
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.postPost'));
+      if (context.mounted) HandleError.ifErroredPushError(context);
+      return null;
+    }
+  }
+
+  static Future<List<String>?> patchCategory(
+      BuildContext context, String categoryName, String modifiedCategoryName) async {
+    http.Response response = await http.patch(
+      Uri.http(backendDomain, '/api/community/category'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+      body: jsonEncode({
+        'category': categoryName,
+        'newcategory': modifiedCategoryName,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+
+      return CategoryList.init(body['categories']); // TODO:
+    } else if (response.statusCode == 400 && context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('카테고리 수정 오류'),
+            content: const Text('중복된 카테고리명 이거나 잘못된 값을 입력했습니다.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('확인'),
+              ),
+            ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+          );
+        },
+        barrierDismissible: true,
+      );
+      return null;
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.postPost'));
+      if (context.mounted) HandleError.ifErroredPushError(context);
+      return null;
+    }
+  }
+
+  static Future<List<String>?> deleteCategory(BuildContext context, String categoryName) async {
+    http.Response response = await http.delete(
+      Uri.http(backendDomain, '/api/community/category'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+      body: jsonEncode({
+        'category': categoryName,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+
+      return CategoryList.init(body['categories']); // TODO:
+    } else if (response.statusCode == 404 && context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('카테고리 삭제 오류'),
+            content: const Text('존재하지 않는 카테고리 입니다.\n이미 삭제처리 되었거나 다른 관리자가 삭제하였을 수 있습니다.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('확인'),
+              ),
+            ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+          );
+        },
+        barrierDismissible: true,
+      );
+
+      Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+
+      return CategoryList.init(body['categories']); // TODO:
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.postPost'));
+      if (context.mounted) HandleError.ifErroredPushError(context);
+      return null;
     }
   }
 
@@ -312,28 +444,6 @@ class HandleCommunity {
     }
   }
 
-  static Future<bool> postComment(BuildContext context, int postNum, String content) async {
-    http.Response response = await http.post(
-      Uri.http(backendDomain, '/api/community/comment', {'post_num': postNum.toString()}),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
-      },
-      body: jsonEncode({
-        'content': content,
-      }),
-    );
-
-    if (response.statusCode == 201) {
-      return true;
-    } else {
-      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
-          'handle_community.dart', 'HandleCommunity.postComment'));
-      return false;
-    }
-  }
-
   static Future<bool> patchPost(
       BuildContext context, int postNum, String category, String title, String content) async {
     http.Response response = await http.patch(
@@ -346,28 +456,6 @@ class HandleCommunity {
       body: jsonEncode({
         'category': category,
         'title': title,
-        'content': content,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      return true;
-    } else {
-      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
-          'handle_community.dart', 'HandleCommunity.postPost'));
-      return false;
-    }
-  }
-
-  static Future<bool> patchComment(BuildContext context, int commentNum, String content) async {
-    http.Response response = await http.patch(
-      Uri.http(backendDomain, '/api/community/comment', {'comment_num': commentNum.toString()}),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
-      },
-      body: jsonEncode({
         'content': content,
       }),
     );
@@ -400,6 +488,63 @@ class HandleCommunity {
     }
   }
 
+  static Future<CommunityCommentList> getCommentList(BuildContext context, Map<String, dynamic> query) async {
+    http.Response response =
+        await http.get(Uri.http(backendDomain, '/api/community/comment', _encodeQueryComponent(query)));
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+
+      return CommunityCommentList.init(query, body['comment'])!;
+    } else {
+      return CommunityCommentList(postNum: query['page']);
+    }
+  }
+
+  static Future<bool> postComment(BuildContext context, int postNum, String content) async {
+    http.Response response = await http.post(
+      Uri.http(backendDomain, '/api/community/comment', {'post_num': postNum.toString()}),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+      body: jsonEncode({
+        'content': content,
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      return true;
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.postComment'));
+      return false;
+    }
+  }
+
+  static Future<bool> patchComment(BuildContext context, int commentNum, String content) async {
+    http.Response response = await http.patch(
+      Uri.http(backendDomain, '/api/community/comment', {'comment_num': commentNum.toString()}),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+      body: jsonEncode({
+        'content': content,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.postPost'));
+      return false;
+    }
+  }
+
   static Future<bool> deleteComment(BuildContext context, int commentNum) async {
     http.Response response = await http.delete(
       Uri.http(backendDomain, '/api/community/comment', {'comment_num': commentNum.toString()}),
@@ -416,6 +561,29 @@ class HandleCommunity {
       errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
           'handle_community.dart', 'HandleCommunity.postPost'));
       return false;
+    }
+  }
+
+  static Future<List> postRecommend(BuildContext context, int postNum) async {
+    http.Response response = await http.post(
+      Uri.http(backendDomain, '/api/community/recommend', {'post_num': postNum.toString()}),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+    );
+
+    if (response.statusCode == 201) {
+      Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+
+      return body['recommend'];
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.postComment'));
+      if (context.mounted) await HandleError.ifErroredPushError(context);
+
+      return [];
     }
   }
 

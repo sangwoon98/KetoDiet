@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ketodiet_flutter_project/pages/community_page.dart';
 
 import '../modules/app_bar.dart';
 
@@ -25,6 +26,10 @@ class _TestPageState extends State<TestPage> {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      if (context.mounted) ModifyCategory.dialog(context);
+    });
+
     return Scaffold(
       appBar: CustomAppBar.widget(context),
       body: Center(
