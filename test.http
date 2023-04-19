@@ -10,6 +10,12 @@ Content-Type: application/json
     "category": "Test"
 }
 
+### 게시글 삭제 ###
+DELETE  {{host}}/api/community?post_num=1
+Content-Type: application/json
+
+
+
 ### 전체 게시글 목록 조회 ###
 GET {{host}}/api/community?page=1
 
@@ -17,29 +23,43 @@ GET {{host}}/api/community?page=1
 GET {{host}}/api/community?page=1&category=Test
 
 ### 전체 게시글에서 타겟 키워드 조회 ###
-GET {{host}}/api/community?page=1&target=huhi&keyword=dasd
+GET {{host}}/api/community?page=1&target=content&keyword=Hel
 
 ### 지정 카테고리에서 타겟 키워드 조회 ###
 GET {{host}}/api/community?page=1&category=Test&target=title&keyword=dasd
 
 
 ### 게시글 상세 조회 ###
-GET {{host}}/api/community?post_num=1
+GET {{host}}/api/community?post_num=22
 
 ### 게시글 수정 ###
-PATCH {{host}}/api/community/?post_num=1
+PATCH {{host}}/api/community?post_num=7
 Content-Type: application/json
 
 {
-    "title": "Updated post",
+    "title": "업데이트 포스트",
     "content": "This post has been updated."
 }
 
 ### 게시글 삭제 ###
-DELETE {{host}}/community/?post_num=1
+DELETE {{host}}/community/?post_num=2
 
 ### 댓글 조회 ###
 GET {{host}}/api/community/comment?post_num=1&page=1
+
+### 댓글 추가 ###
+POST {{host}}/api/community/comment?post_num=22
+Content-Type: application/json
+
+{
+    "content": "This comment has been updated."
+}
+
+### 댓글 삭제 ###
+DELETE  {{host}}/api/community/comment?comment_num=10
+Content-Type: application/json
+
+
 
 ### 카테고리 조회 ###
 GET {{host}}/api/community/category
@@ -71,7 +91,7 @@ Content-Type: application/json
 
 
 ### 추천수 조회 ###
-GET {{host}}/api/community/recommend?post_num=1
+GET {{host}}/api/community/recommend?post_num=21
 Content-Type: application/json
 
 ### 추천 추가 ###

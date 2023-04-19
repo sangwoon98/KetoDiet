@@ -22,8 +22,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from django.db.models import Q
-import json
-import urllib.parse
+import json, math, urllib.parse
 
 # DB 모델 인스턴스나 QuerySet 데이터를 JSON으로 반환 , 출력값: fields로 고정, data={'name':name}형태로 삽입후 직렬화 가능,
 class CommunityDBSerializer(serializers.ModelSerializer): 
@@ -113,68 +112,77 @@ def get_http_request_to_request(request):
 
 
 class CommunityView(APIView):
-    
     def body_get_multy_value(self, request, keys):
         return [request.data.get(key) for key in keys]
 
-    def get(self, request): # hit 기능 추가
+    def get(self, request):
         page = self.request.query_params.get('page')
         categories = CategoryDB.objects.all().values_list('categorys', flat=True)
         
-        
         if page:
-            http_request=get_http_request_to_request(request)
+            # page 파라미터가 존재하는 경우에 대한 처리
+            http_request = get_http_request_to_request(request)
             serializer = CommunityList.as_view()(http_request).data
-            return Response({'category':categories,  'page':serializer}, status=status.HTTP_200_OK)
-            
+            return Response({'category':categories, 'page':serializer}, status=status.HTTP_200_OK)
         else:
+            # post_num 파라미터가 있는 경우에 대한 처리
             post_num = request.query_params.get('post_num')
+            #_______________________________________________________________________________________
             try: 
                 qs = CommunityDB.objects.get(post_num=post_num)
                 qs.hit += 1
                 qs.save()
-            except:
-                http_request = HttpRequest()
-                http_request.method = 'GET'
-                http_request.META['SERVER_NAME'] = request.META['SERVER_NAME']
-                http_request.META['SERVER_PORT'] = request.META['SERVER_PORT']
-                all_list=CommunityDB.objects.all().order_by('-post_num')
-                http_request.GET['page'] = 1
-                list_serializer = CommunityList.as_view()(http_request).data # list 가져다줄때 해당 목록만 가져다줌
-            
-                return Response({'page_number':1, 'category':categories, 'post':{"detail": "Invalid page."},'comment':[], 'page':list_serializer})
-            
-            
-            
-            try:
-                #__________________________글_______________________________________
-                
+
+                # 글, 목록, 댓글 가져오기
                 community_serializer = CommunityDBSerializer(qs)
-                #__________________________목록_______________________________________
-                http_request = HttpRequest()
-                http_request.method = 'GET'
-                http_request.META['SERVER_NAME'] = request.META['SERVER_NAME']
-                http_request.META['SERVER_PORT'] = request.META['SERVER_PORT']
-                all_list=CommunityDB.objects.all().order_by('-post_num')
-                page_number = get_post_num_order(post_num, all_list, 30)  # post_num이 몇번째에 속하는지 계산
+            #_______________________________________________________________________________________
+
+                all_list = CommunityDB.objects.all().order_by('-post_num')
+                page_number = get_post_num_order(post_num, all_list, 30)
                 if page_number is None:
                     list_serializer = []  # 목록에 없을때
                 else:
+                    http_request = HttpRequest()
+                    http_request.method = 'GET'
+                    http_request.META['SERVER_NAME'] = request.META['SERVER_NAME']
+                    http_request.META['SERVER_PORT'] = request.META['SERVER_PORT']
                     http_request.GET['page'] = page_number
-                    list_serializer = CommunityList.as_view()(http_request).data # list 가져다줄때 해당 목록만 가져다줌
-                #__________________________댓글________________________________________
-                import math
-                all_list=CommunitycommentDB.objects.filter(post_num=post_num)
-                comment_page=math.ceil(len(all_list)/20)
-                print('comment_page: ',comment_page)
-                http_request.GET['page'] = comment_page
-                http_request.GET['post_num'] = post_num
-                comment_serializer = CommunityCommentList.as_view()(http_request).data
-                #_________________________________________________________________
-                return Response({'page_num':page_number, 'category':categories, 'post':community_serializer.data,'comment':comment_serializer,'page':list_serializer}, status=status.HTTP_200_OK) 
-            except: 
-                return Response(status=status.HTTP_400_BAD_REQUEST) # post_num값이 잘못됨
-           
+                    list_serializer = CommunityList.as_view()(http_request).data
+            #_______________________________________________________________________________________
+
+                all_list = CommunitycommentDB.objects.filter(post_num=post_num)
+                comment_page = math.ceil(len(all_list)/20)
+                if comment_page==0:
+                    comment_serializer={
+                        "count": 0,
+                        "next": None,
+                        "previous": None,
+                        "results": []
+                    }
+                else:
+                    http_request = HttpRequest()
+                    http_request.method = 'GET'
+                    http_request.META['SERVER_NAME'] = request.META['SERVER_NAME']
+                    http_request.META['SERVER_PORT'] = request.META['SERVER_PORT']
+                    http_request.GET['page'] = comment_page
+                    http_request.GET['post_num'] = post_num
+                    comment_serializer = CommunityCommentList.as_view()(http_request).data
+            #_______________________________________________________________________________________
+                return Response({
+                    'page_num': page_number,
+                    'category': categories,
+                    'post': community_serializer.data,
+                    'comment': comment_serializer,
+                    'page': list_serializer
+                }, status=status.HTTP_200_OK) 
+                
+            except CommunityDB.DoesNotExist:
+                # post_num값이 잘못된 경우에 대한 처리
+                return Response({'detail': 'Invalid post_num.'}, status=status.HTTP_400_BAD_REQUEST)
+            except:
+                # 그 외의 예외 상황에 대한 처리
+                return Response({'detail': 'An error has occurred.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
     def post(self, request):
         id = AccountView.access_token_to_id(self, request)
@@ -185,7 +193,6 @@ class CommunityView(APIView):
             
         data = self.body_get_multy_value(request, ['title', 'content','category'])
         serializer = CommunityDBSerializer(data={'id':id, 'name': name, 'title': data[0], 'content': data[1], 'category':data[2]}) 
-        print('1')
         if serializer.is_valid():
             serializer.save()
             #post_num , 생성날짜 똑같이맞춰주고, 글조회시 커맨트가 없으면 빈리스트
@@ -206,8 +213,16 @@ class CommunityView(APIView):
             data = {}
             for key in request.data.keys():
                 data[key] = request.data[key]
-            print(data)
-            serializer = CommunityDBSerializer(community, data=data, partial=True) # 수정일 문제 해결
+            serializer = CommunityDBSerializer(community, data=data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        elif UserDB.objects.get(id=id).isAdmin==True:
+            data={}
+            data['category']= request.data.get('category')
+            serializer = CommunityDBSerializer(community, data=data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(status=status.HTTP_200_OK)
@@ -235,18 +250,17 @@ class CommunityView(APIView):
                 if comment_list:
                     comment_list.delete()
                 return Response(status=status.HTTP_200_OK)
+            elif UserDB.objects.get(id=id).isAdmin == True:
+                community.delete()
+                try:
+                    comment_list=CommunitycommentDB.objects.filter(post_num=post_num)
+                except:
+                    comment_list=None
+                if comment_list:
+                    comment_list.delete()
+                return Response(status= status.HTTP_200_OK)
             else:
-                if UserDB.objects.get(id).isAdmin == True:
-                    community.delete()
-                    try:
-                        comment_list=CommunitycommentDB.objects.filter(post_num=post_num)
-                    except:
-                        comment_list=None
-                    if comment_list:
-                        comment_list.delete()
-                    return Response(status= status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN) # 권한 없음
+                return Response(status=status.HTTP_403_FORBIDDEN) # 권한 없음
 
 class CommentDBSerializer(serializers.ModelSerializer):
     class Meta:
@@ -269,13 +283,9 @@ class CommunityCommentList(generics.ListAPIView):
 
     def get_queryset(self):
         post_num = self.request.GET.get('post_num')
-        # if not post_num:
-        #     # post_num parameter가 전달되지 않으면 400 Bad Request 반환
-        #     raise BAD_REQUEST('post_num parameter is required')
-        
-        # post_num parameter로 필터링된 댓글들을 comment_num 기준 오름차순으로 정렬하여 반환
-        queryset = CommunitycommentDB.objects.filter(post_num=post_num).order_by('-comment_num')
+        queryset = CommunitycommentDB.objects.filter(post_num=post_num).order_by('comment_num')
         return queryset
+
             
             
 class Community_comment(APIView):
@@ -293,27 +303,32 @@ class Community_comment(APIView):
         id = AccountView.access_token_to_id(self, request)
         try:
             qs = UserDB.objects.get(id=id)
-            name = qs.name
-            content = request.data.get('content')
-            post_num = request.query_params.get('post_num')
-            serializer = CommentDBSerializer(data={'id':id, 'name':name, 'content':content, 'post_num':post_num})
-            if serializer.is_valid():
-                com_qs = CommunityDB.objects.get(post_num=post_num)
-                serializer.save()
-                com_qs.comment_count+=1
-                com_qs.save()
-                return Response(status=status.HTTP_201_CREATED) #정상
-            else:
-                return Response(status=status.HTTP_400_BAD_REQUEST) # 요청 값 오류   
         except:
             return Response(status=status.HTTP_403_FORBIDDEN) # 알수 없는 사용자
+        name = qs.name
+        content = request.data.get('content')
+        post_num = request.query_params.get('post_num')
+        serializer = CommentDBSerializer(data={'id':id, 'name':name, 'content':content, 'post_num':post_num})
+        if serializer.is_valid():
+            com_qs = CommunityDB.objects.get(post_num=post_num)
+            serializer.save()
+            com_qs.comment_count+=1
+            com_qs.save()
+            return Response(status=status.HTTP_201_CREATED) #정상
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST) # 요청 값 오류   
+
     
     def patch(self, request):
         id = AccountView.access_token_to_id(self, request)
-        if CommunitycommentDB.id == id:
+        comment_num = request.query_params.get('comment_num')
+        try:
+            comment = CommunitycommentDB.objects.get(comment_num=comment_num)
+        except:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+        if comment.id == id:
             try:
-                comment_num = request.query_params.get('comment_num')
-                comment = CommunitycommentDB.objects.get(comment_num)
                 data = {}
                 for key in request.data.keys(): # body의 데이터를 딕셔너리로
                     data[key] = request.data[key]
@@ -334,24 +349,25 @@ class Community_comment(APIView):
         comment_num = request.query_params.get('comment_num')
         try:
             comment = CommunitycommentDB.objects.get(comment_num=comment_num)
-            post_num = comment.post_num
-            if comment.id == id:
+        except:
+            return Response(status= status.HTTP_400_BAD_REQUEST)
+        post_num = comment.post_num
+        if comment.id == id:
+            com_qs = CommunityDB.objects.get(post_num=post_num)
+            comment.delete()
+            com_qs.comment_count-=1
+            com_qs.save()
+            return Response(status=status.HTTP_200_OK)
+        else:
+            if UserDB.objects.get(id).isAdmin == True:
                 com_qs = CommunityDB.objects.get(post_num=post_num)
                 comment.delete()
                 com_qs.comment_count-=1
                 com_qs.save()
-                return Response(status=status.HTTP_200_OK)
+                return Response(status= status.HTTP_200_OK)
             else:
-                if UserDB.objects.get(id).isAdmin == True:
-                    com_qs = CommunityDB.objects.get(post_num=post_num)
-                    comment.delete()
-                    com_qs.comment_count-=1
-                    com_qs.save()
-                    return Response(status= status.HTTP_200_OK)
-                else:
-                    return Response(status=status.HTTP_403_FORBIDDEN) # 권한 없음
-        except:
-            return Response(status= status.HTTP_400_BAD_REQUEST)
+                return Response(status=status.HTTP_403_FORBIDDEN) # 권한 없음
+
         
 
 class Category(APIView):
@@ -369,56 +385,74 @@ class Category(APIView):
         id = AccountView.access_token_to_id(self, request)
         try:
             isAdmin = UserDB.objects.get(id=id).isAdmin
-            if isAdmin:
-                category = request.data.get('category') # 파라미터의 카테고리
-                all_categories = CategoryDB.objects.all().values_list('categorys', flat=True) # 저장된 모든 카테고리를 리스트로 가져옵니다.
-                if category not in all_categories: # 새로운 카테고리가 all_categories에 없으면 추가합니다.
-                    CategoryDB.objects.create(categorys=category)
-                    categories = CategoryDB.objects.all().values_list('categorys', flat=True)
-                    return Response({'categories': categories}, status= status.HTTP_201_CREATED)
-                else:
-                    return Response(status= status.HTTP_400_BAD_REQUEST)
+        except:
+            isAdmin= None
+        
+        if isAdmin:
+            category = request.data.get('category') # 파라미터의 카테고리
+            all_categories = CategoryDB.objects.all().values_list('categorys', flat=True) # 저장된 모든 카테고리를 리스트로 가져옵니다.
+            if category not in all_categories: # 새로운 카테고리가 all_categories에 없으면 추가합니다.
+                CategoryDB.objects.create(categorys=category)
+                categories = CategoryDB.objects.all().values_list('categorys', flat=True)
+                return Response({'category': categories}, status= status.HTTP_201_CREATED)
             else:
-                return Response(status= status.HTTP_403_FORBIDDEN)
-        except UserDB.DoesNotExist:
-            return Response({'success': False, 'message': 'User does not exist'})
-    
+                return Response({'category': all_categories},status= status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(status= status.HTTP_403_FORBIDDEN)
+
     def patch(self, request):
         id = AccountView.access_token_to_id(self, request)
         try:
             isAdmin = UserDB.objects.get(id=id).isAdmin
-            if isAdmin:
-                new_category = request.data.get('newcategory') # 교채 하려는 카태고리
-                category = request.data.get('category') # 교채 하려는 카태고리
-                category = CategoryDB.objects.get(categorys=category)
-                if new_category:
-                    category.categorys = new_category
-                    category.save()
-                    categories = CategoryDB.objects.all().values_list('categorys', flat=True)
-                    return Response({'categories': categories},status= status.HTTP_200_OK)
-                else:
-                    return Response(status= status.HTTP_400_BAD_REQUEST)
+        except:
+            isAdmin=None
+            
+        if isAdmin:
+            new_category = request.data.get('newcategory') # 교채 하려는 카태고리
+            category = request.data.get('category') # 교채 하려는 카태고리
+            category = CategoryDB.objects.get(categorys=category)
+            if new_category:
+                category.categorys = new_category
+                category.save()
+                categories = CategoryDB.objects.all().values_list('categorys', flat=True)
+                return Response({'category': categories},status= status.HTTP_200_OK)
             else:
-                return Response(status= status.HTTP_403_FORBIDDEN)
-        except CategoryDB.DoesNotExist:
-            return Response(status= status.HTTP_404_NOT_FOUND)
+                return Response({'category': categories}, status= status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(status= status.HTTP_403_FORBIDDEN)
         
     def delete(self, request):
         id = AccountView.access_token_to_id(self, request)
         try:
             isAdmin = UserDB.objects.get(id=id).isAdmin
-            if isAdmin:
-                category = request.data.get('category') # 파라미터의 카테고리
+        except:
+            isAdmin = None
+        if isAdmin:
+            category = request.data.get('category') # 파라미터의 카테고리
+            try:
                 category = CategoryDB.objects.get(categorys=category)
+            except:
+                category= None
+                
+            if category:
                 category.delete()
-                categories = CategoryDB.objects.all().values_list('categorys', flat=True)
+                try:
+                    categories = CategoryDB.objects.all().values_list('categorys', flat=True)
+                except:
+                    categories = None
+                    
                 if not categories: # 만약 카테고리가 하나도 없다면 빈 리스트를 반환
                     categories = []
-                return Response({'categories': categories}, status= status.HTTP_200_OK)
             else:
-                return Response(status= status.HTTP_403_FORBIDDEN)
-        except CategoryDB.DoesNotExist:
-            return Response(status= status.HTTP_404_NOT_FOUND)
+                categories = CategoryDB.objects.all().values_list('categorys', flat=True)
+                return Response({'category': categories}, status= status.HTTP_404_NOT_FOUND)
+                
+            return Response({'category': categories}, status= status.HTTP_200_OK)
+        else:
+            return Response(status= status.HTTP_403_FORBIDDEN)
+    
+        
+        
         
         
 class Recommend(APIView):
@@ -429,34 +463,33 @@ class Recommend(APIView):
         return Response({'recommend': recommend})
     
     def post(self, request):
-        user_id = AccountView.access_token_to_id(self, request)
-        if user_id:
+        id = AccountView.access_token_to_id(self, request)
+        if id:
             post_num = request.query_params.get('post_num')
             community = CommunityDB.objects.get(post_num=post_num)
             recommends = community.recommend
-            if user_id not in recommends:
-                recommends.append(user_id)
+            if id not in recommends:
+                recommends.append(id)
                 community.recommend = recommends
                 community.save()
-            return Response({'recommend': community.recommend})
+            return Response({'recommend': community.recommend}, status=status.HTTP_201_CREATED)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-
         
     def delete(self, request):
-        user_id = AccountView.access_token_to_id(self, request)
-        if user_id:
+        id = AccountView.access_token_to_id(self, request)
+        if id:
             post_num = request.query_params.get('post_num')
             community = CommunityDB.objects.get(post_num=post_num)
             recommends = json.loads(community.recommend)
-            if isinstance(recommends, int):
-                recommends = []
-            if user_id in recommends:
-                recommends.remove(user_id)
+            if id in recommends:
+                recommends.remove(id)
                 community.recommend = json.dumps(recommends)
                 community.save()
-            return Response({'recommend': community.recommend})
+                return Response({'recommend': community.recommend})
+            else:
+                return Response({'recommend': community.recommend},status=status.HTTP_404_NOT_FOUND)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
