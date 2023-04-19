@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -85,6 +86,8 @@ class PostWidget {
   }
 
   static Widget _post(BuildContext context, CommunityPost communityPost) {
+    StreamController<bool> recommendController = StreamController<bool>.broadcast();
+
     if (communityPost.title == null) {
       return Column(
         children: const [
@@ -100,7 +103,7 @@ class PostWidget {
 
     Widget modifyOption = const SizedBox();
 
-    if (accountManager.accountArguments.name == communityPost.name || accountManager.accountArguments.isAdmin == true) {
+    if (accountManager.accountArguments.name == communityPost.name) {
       modifyOption = Row(
         children: [
           const SizedBox(width: 10.0),
@@ -120,6 +123,50 @@ class PostWidget {
                     'category': communityPost.category,
                     'title': communityPost.title,
                     'content': communityPost.content,
+                  },
+                );
+              });
+            },
+            child: const Text('수정'),
+          ),
+          Container(color: Colors.black, width: 1.0, height: 14.0),
+          TextButton(
+            onPressed: () async {
+              bool success = await HandleCommunity.deletePost(context, communityPost.postNum);
+              if (success) {
+                WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                  Navigator.pushNamedAndRemoveUntil(context, '/community', (_) => false);
+                });
+              }
+            },
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+            ),
+            child: const Text('삭제'),
+          ),
+        ],
+      );
+    } else if (accountManager.accountArguments.isAdmin == true) {
+      modifyOption = Row(
+        children: [
+          const SizedBox(width: 10.0),
+          Container(color: Colors.black, width: 1.0, height: 14.0),
+          TextButton(
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+            ),
+            onPressed: () {
+              WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/community/post',
+                  (_) => false,
+                  arguments: {
+                    'postNum': communityPost.postNum,
+                    'category': communityPost.category,
+                    'title': communityPost.title,
+                    'content': communityPost.content,
+                    'isAdmin': true,
                   },
                 );
               });
@@ -214,21 +261,73 @@ class PostWidget {
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 20.0),
-          child: ElevatedButton(
-            onPressed: () async {
-              // TODO: POST 추천
-            },
-            style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0))),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
-              child: Column(
-                children: [
-                  const Icon(Icons.recommend, size: 38.0),
-                  Text('추천: ${communityPost.recommend.toString()}'),
-                ],
-              ),
-            ),
-          ),
+          child: StreamBuilder(
+              stream: recommendController.stream,
+              builder: (context, snapshot) {
+                if (accountManager.accountArguments.uid != null) {
+                  List<String> recommendList = [];
+                  for (var element in communityPost.recommendList!) {
+                    recommendList.add(element.toString());
+                  }
+
+                  if (recommendList.contains(accountManager.accountArguments.uid)) {
+                    recommendController.add(true);
+                  } else {
+                    recommendController.add(false);
+                  }
+                }
+
+                return ElevatedButton(
+                  onPressed: () async {
+                    if (accountManager.accountArguments.uid == null) {
+                      await showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: const Text('추천 오류'),
+                            content: const Text('추천은 회원만 가능합니다.\n회원가입 및 로그인 후 이용해주세요.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: const Text('확인'),
+                              ),
+                            ],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.0),
+                            ),
+                          );
+                        },
+                        barrierDismissible: true,
+                      );
+                    } else {
+                      communityPost.recommendList = await HandleCommunity.postRecommend(context, communityPost.postNum);
+                      if (communityPost.recommendList != null && communityPost.recommendList != []) {
+                        communityPost.recommend = communityPost.recommendList!.length;
+                        recommendController.add(true);
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: snapshot.data == true ? Colors.white : Colors.green,
+                    backgroundColor: snapshot.data == true ? Colors.green : Colors.white,
+                    shape: RoundedRectangleBorder(
+                      side: BorderSide(color: snapshot.data == true ? Colors.transparent : Colors.green, width: 3.0),
+                      borderRadius: BorderRadius.circular(20.0),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.recommend, size: 38.0),
+                        Text('추천: ${communityPost.recommend.toString()}'),
+                      ],
+                    ),
+                  ),
+                );
+              }),
         ),
         Container(width: 1020.0, height: 2.0, color: Colors.grey),
       ],
@@ -601,7 +700,7 @@ class PostWidget {
 
         Widget modifyOption = const SizedBox();
 
-        if (accountManager.accountArguments.name == comment.name || accountManager.accountArguments.isAdmin == true) {
+        if (accountManager.accountArguments.name == comment.name) {
           modifyOption = Row(
             children: [
               const SizedBox(width: 10.0),
@@ -615,6 +714,28 @@ class PostWidget {
                 },
                 child: const Text('수정', style: TextStyle(color: Colors.white)),
               ),
+              Container(color: Colors.white, width: 1.0, height: 14.0),
+              TextButton(
+                onPressed: () async {
+                  bool success = await HandleCommunity.deleteComment(context, comment.commentNum);
+                  if (success && context.mounted) {
+                    commentListStream.add(await HandleCommunity.getCommentList(
+                        context, {'post': commentList.postNum, 'page': commentList.pageNum}));
+                  } else {
+                    if (context.mounted) await HandleError.ifErroredPushError(context);
+                  }
+                },
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                ),
+                child: const Text('삭제', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        } else if (accountManager.accountArguments.isAdmin == true) {
+          modifyOption = Row(
+            children: [
+              const SizedBox(width: 10.0),
               Container(color: Colors.white, width: 1.0, height: 14.0),
               TextButton(
                 onPressed: () async {
@@ -1203,7 +1324,52 @@ class PostListWidget {
       child: Stack(
         children: [
           Positioned(bottom: 0.0, child: Container(width: 1040.0, height: 2.0, color: Colors.grey)),
-          Positioned(top: 0.0, child: Row(children: categoryButtons)),
+          Positioned(
+            child: ScrollConfiguration(
+              behavior: MyCustomScrollBehavior(),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemBuilder: (BuildContext context, int index) {
+                  return categoryButtons[index];
+                },
+                itemCount: categoryButtons.length,
+              ),
+            ),
+          ),
+          StreamBuilder(
+            stream: accountManager.isAdminStreamController.stream,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData && accountManager.accountArguments.isAdmin == true) {
+                accountManager.isAdminStreamController.add(accountManager.accountArguments.isAdmin);
+              }
+
+              if (snapshot.data == true) {
+                return Positioned(
+                  right: 10.0,
+                  child: SizedBox(
+                    width: 24.0,
+                    height: 24.0,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        ModifyCategory.dialog(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        foregroundColor: Colors.grey,
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20.0),
+                        ),
+                      ),
+                      child: const Icon(Icons.settings, size: 14.0),
+                    ),
+                  ),
+                );
+              } else {
+                return const SizedBox();
+              }
+            },
+          ),
         ],
       ),
     );
@@ -1301,9 +1467,9 @@ class PostListWidget {
     return TextButton(
       onPressed: () {
         String query = 'post=${post.postNum}';
-        if (postList.category is String) query = '$query&category=${postList.category}';
-        if (postList.target is String) query = '$query&category=${postList.target}';
-        if (postList.keyword is String) query = '$query&keyword=${postList.keyword}';
+        if (postList.category is String) query = '$query&category=${Uri.encodeQueryComponent(postList.category!)}';
+        if (postList.target is String) query = '$query&target=${Uri.encodeQueryComponent(postList.target!)}';
+        if (postList.keyword is String) query = '$query&keyword=${Uri.encodeQueryComponent(postList.keyword!)}';
         if (postList.recommend == true) query = '$query&recommend=true';
 
         WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
@@ -1631,10 +1797,11 @@ class WritePost {
   static Widget widget(BuildContext context, Map<String, dynamic>? query) {
     List<Widget> list = [];
 
+    final StreamController<String?> selectedCategoryStreamController = StreamController<String?>.broadcast();
     final TextEditingController titleController = TextEditingController();
     final TextEditingController contentController = TextEditingController();
 
-    list.add(_postForm(context, query, titleController, contentController));
+    list.add(_postForm(context, query, selectedCategoryStreamController, titleController, contentController));
     list.add(const SizedBox(height: 10.0));
     list.add(_buttons(context, query, titleController, contentController));
 
@@ -1786,7 +1953,11 @@ class WritePost {
     );
   }
 
-  static Widget _postForm(BuildContext context, Map<String, dynamic>? query, TextEditingController titleController,
+  static Widget _postForm(
+      BuildContext context,
+      Map<String, dynamic>? query,
+      StreamController<String?> selectedCategoryStreamController,
+      TextEditingController titleController,
       TextEditingController contentController) {
     return Material(
       elevation: 8.0,
@@ -1797,7 +1968,7 @@ class WritePost {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _categorySelect(context, query),
+            _categorySelect(context, query, selectedCategoryStreamController),
             _titleField(query, titleController),
             const SizedBox(height: 10.0),
             _contentField(query, contentController),
@@ -1807,22 +1978,23 @@ class WritePost {
     );
   }
 
-  static Widget _categorySelect(BuildContext context, Map<String, dynamic>? query) {
+  static Widget _categorySelect(
+      BuildContext context, Map<String, dynamic>? query, StreamController<String?> selectedCategoryStreamController) {
     return FutureBuilder(
       future: HandleCommunity.getCategoryList(context),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           List<String> categoryList = snapshot.data!;
-          final StreamController<String?> selectedCategoryStreamController = StreamController<String?>.broadcast();
 
           return StreamBuilder(
               stream: selectedCategoryStreamController.stream,
               builder: (context, snapshot) {
                 selectedCategory = snapshot.data;
                 List<Widget> children = [];
-                if (query != null) {
+                if (query != null && selectedCategory == null) {
                   selectedCategoryStreamController.add(query['category']);
                 }
+
                 for (var element in categoryList) {
                   children.add(
                     Padding(
@@ -1859,6 +2031,7 @@ class WritePost {
     titleController.text = query == null ? '' : query['title']!;
     return TextFormField(
       controller: titleController,
+      readOnly: query?['isAdmin'] ?? false,
       textAlignVertical: TextAlignVertical.center,
       decoration: const InputDecoration(
         hintText: '제목',
@@ -1879,6 +2052,7 @@ class WritePost {
     contentController.text = query == null ? '' : query['content']!;
     return TextFormField(
       controller: contentController,
+      readOnly: query?['isAdmin'] ?? false,
       textAlignVertical: TextAlignVertical.top,
       decoration: const InputDecoration(
         hintText: '본문 입력',
@@ -1898,4 +2072,380 @@ class WritePost {
       maxLines: null,
     );
   }
+}
+
+class ModifyCategory {
+  static void dialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return _alertDialog(context);
+      },
+      barrierDismissible: true,
+    );
+  }
+
+  static AlertDialog _alertDialog(BuildContext context) {
+    return AlertDialog(
+      title: const Text('카테고리 관리'),
+      content: SizedBox(width: 400.0, height: 300.0, child: _content()),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text('닫기'),
+        ),
+      ],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20.0),
+      ),
+    );
+  }
+
+  static Widget _content() {
+    StreamController<List<String>> categoryListController = StreamController<List<String>>.broadcast();
+
+    return StreamBuilder(
+      stream: categoryListController.stream,
+      builder: (context, snapshot) {
+        List<Widget> categoryList = [];
+
+        if (snapshot.hasData) {
+          for (var element in snapshot.data!) {
+            categoryList.add(_item(context, categoryListController, element));
+          }
+        } else {
+          HandleCommunity.getCategoryList(context).then((value) {
+            categoryListController.add(value!);
+          });
+        }
+
+        categoryList.add(_addCategory(context, categoryListController));
+
+        return ListView.builder(
+          itemBuilder: (BuildContext context, int index) {
+            return categoryList[index];
+          },
+          itemCount: categoryList.length,
+        );
+      },
+    );
+  }
+
+  static Widget _item(
+      BuildContext context, StreamController<List<String>> categoryListController, String categoryName) {
+    StreamController<bool> modifyController = StreamController<bool>.broadcast();
+
+    return StreamBuilder(
+      stream: modifyController.stream,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          if (snapshot.data!) {
+            TextEditingController textEditingController = TextEditingController();
+            textEditingController.text = categoryName;
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+              child: Material(
+                elevation: 8.0,
+                borderRadius: BorderRadius.circular(20.0),
+                child: Container(
+                  width: double.infinity,
+                  height: 70.0,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: textEditingController,
+                            textAlignVertical: TextAlignVertical.center,
+                            decoration: const InputDecoration(
+                              hintText: '카테고리 수정',
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(20.0)),
+                                borderSide: BorderSide(color: Colors.green),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(20.0)),
+                                borderSide: BorderSide(color: Colors.grey),
+                              ),
+                            ),
+                            autofocus: true,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            modifyController.add(false);
+                          },
+                          padding: EdgeInsets.zero,
+                          hoverColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          splashColor: Colors.transparent,
+                          icon: const Icon(Icons.close, size: 20.0, color: Colors.red),
+                        ),
+                        IconButton(
+                          onPressed: () async {
+                            if (textEditingController.text.isNotEmpty) {
+                              List<String>? categoryList = await HandleCommunity.patchCategory(
+                                  context, categoryName, textEditingController.text);
+                              if (categoryList != null) {
+                                categoryListController.add(categoryList);
+                                modifyController.add(false);
+                              }
+                            } else {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    title: const Text('카테고리 수정 오류'),
+                                    content: const Text('카테고리명을 입력해주세요.'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text('확인'),
+                                      ),
+                                    ],
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20.0),
+                                    ),
+                                  );
+                                },
+                                barrierDismissible: true,
+                              );
+                            }
+                          },
+                          padding: EdgeInsets.zero,
+                          hoverColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          splashColor: Colors.transparent,
+                          icon: const Icon(Icons.check, size: 20.0, color: Colors.green),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          } else {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+              child: Material(
+                elevation: 8.0,
+                borderRadius: BorderRadius.circular(20.0),
+                child: Container(
+                  width: double.infinity,
+                  height: 50.0,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(categoryName),
+                        const Expanded(child: SizedBox()),
+                        IconButton(
+                          onPressed: () {
+                            modifyController.add(true);
+                          },
+                          padding: EdgeInsets.zero,
+                          hoverColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          splashColor: Colors.transparent,
+                          icon: const Icon(Icons.edit, size: 20.0, color: Colors.amber),
+                        ),
+                        IconButton(
+                          onPressed: () async {
+                            List<String>? categoryList = await HandleCommunity.deleteCategory(context, categoryName);
+                            if (categoryList != null) {
+                              categoryListController.add(categoryList);
+                            }
+                          },
+                          padding: EdgeInsets.zero,
+                          hoverColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          splashColor: Colors.transparent,
+                          icon: const Icon(Icons.delete, size: 20.0, color: Colors.red),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+        } else {
+          modifyController.add(false);
+          return const SizedBox();
+        }
+      },
+    );
+  }
+
+  static Widget _addCategory(BuildContext context, StreamController<List<String>> categoryListController) {
+    StreamController<bool> modifyController = StreamController<bool>.broadcast();
+
+    return StreamBuilder(
+      stream: modifyController.stream,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          if (snapshot.data!) {
+            TextEditingController textEditingController = TextEditingController();
+
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+              child: Material(
+                elevation: 8.0,
+                borderRadius: BorderRadius.circular(20.0),
+                child: Container(
+                  width: double.infinity,
+                  height: 70.0,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: textEditingController,
+                            textAlignVertical: TextAlignVertical.center,
+                            decoration: const InputDecoration(
+                              hintText: '카테고리 생성',
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(20.0)),
+                                borderSide: BorderSide(color: Colors.green),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(20.0)),
+                                borderSide: BorderSide(color: Colors.grey),
+                              ),
+                            ),
+                            autofocus: true,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            modifyController.add(false);
+                          },
+                          padding: EdgeInsets.zero,
+                          hoverColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          splashColor: Colors.transparent,
+                          icon: const Icon(Icons.close, size: 20.0, color: Colors.red),
+                        ),
+                        IconButton(
+                          onPressed: () async {
+                            if (textEditingController.text.isNotEmpty) {
+                              List<String>? categoryList =
+                                  await HandleCommunity.postCategory(context, textEditingController.text);
+                              if (categoryList != null) {
+                                categoryListController.add(categoryList);
+                                modifyController.add(false);
+                              }
+                            } else {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    title: const Text('카테고리 생성 오류'),
+                                    content: const Text('카테고리명을 입력해주세요.'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text('확인'),
+                                      ),
+                                    ],
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20.0),
+                                    ),
+                                  );
+                                },
+                                barrierDismissible: true,
+                              );
+                            }
+                          },
+                          padding: EdgeInsets.zero,
+                          hoverColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          splashColor: Colors.transparent,
+                          icon: const Icon(Icons.check, size: 20.0, color: Colors.green),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          } else {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20.0, 10.0, 20.0, 10.0),
+              child: Material(
+                elevation: 8.0,
+                borderRadius: BorderRadius.circular(20.0),
+                child: Container(
+                  width: double.infinity,
+                  height: 50.0,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Expanded(child: SizedBox()),
+                        IconButton(
+                          onPressed: () {
+                            modifyController.add(true);
+                          },
+                          padding: EdgeInsets.zero,
+                          hoverColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          splashColor: Colors.transparent,
+                          icon: const Icon(Icons.add, size: 30.0, color: Colors.green),
+                        ),
+                        const Expanded(child: SizedBox()),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+        } else {
+          modifyController.add(false);
+          return const SizedBox();
+        }
+      },
+    );
+  }
+}
+
+class MyCustomScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+      };
 }
