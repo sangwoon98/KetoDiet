@@ -61,8 +61,8 @@ class CommunityPost {
       hit: body['hit'],
       recommendList: body['recommend'],
       commentCount: body['comment_count'],
-      createDate: DateTime.parse(body['create_date']),
-      updateDate: DateTime.parse(body['update_date']),
+      createDate: DateTime.parse(body['create_date']).toLocal(),
+      updateDate: DateTime.parse(body['update_date']).toLocal(),
     );
   }
 }
@@ -129,7 +129,7 @@ class CommunityPostList {
         hit: element['hit'],
         recommendList: element['recommend'],
         commentCount: element['comment_count'],
-        createDate: DateTime.parse(element['create_date']),
+        createDate: DateTime.parse(element['create_date']).toLocal(),
       ));
     }
 
@@ -165,9 +165,12 @@ class CommunityCommentList {
   }
 
   static CommunityCommentList? init(Map<String, dynamic> query, Map<String, dynamic>? body) {
-    if (!query.containsKey('post') || body == null || body.containsKey('detail')) return null;
+    CommunityCommentList communityCommentList = CommunityCommentList(
+      postNum: query.containsKey('post') ? query['post'] : 0,
+      pageNum: query.containsKey('page') ? query['page'] : 1,
+    );
 
-    CommunityCommentList communityCommentList = CommunityCommentList(postNum: query['post']);
+    if (!query.containsKey('post') || body == null || body.containsKey('detail')) return communityCommentList;
 
     int count = body['count'];
     int commentPerPage = 20;
@@ -189,8 +192,8 @@ class CommunityCommentList {
         commentNum: element['comment_num'],
         name: element['name'],
         content: element['content'],
-        createDate: DateTime.parse(element['create_date']),
-        updateDate: DateTime.parse(element['update_date']),
+        createDate: DateTime.parse(element['create_date']).toLocal(),
+        updateDate: DateTime.parse(element['update_date']).toLocal(),
       ));
     }
     return communityCommentList;
@@ -253,6 +256,36 @@ class HandleCommunity {
         communityForum.communityCommentList = CommunityCommentList.init(query, body['comment']);
         communityForum.categoryList = CategoryList.init(body['category']);
         if (body.containsKey('page_num')) communityForum.communityPostList!.pageNum = body['page_num'];
+
+        if (communityForum.communityPostList!.pageNum > 1 && communityForum.communityPostList!.pageCount == null) {
+          query['page'] = 1;
+          response = await http.get(Uri.http(backendDomain, '/api/community', _encodeQueryComponent(query)));
+
+          if (response.statusCode == 200) {
+            Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+
+            communityForum.communityPost = CommunityPost.init(query, body['post']);
+            communityForum.communityPostList = CommunityPostList.init(query, body['page']);
+            communityForum.communityCommentList = CommunityCommentList.init(query, body['comment']);
+            communityForum.categoryList = CategoryList.init(body['category']);
+            if (body.containsKey('page_num')) communityForum.communityPostList!.pageNum = body['page_num'];
+
+            if (communityForum.communityPostList!.pageCount! > 1) {
+              query['page'] = communityForum.communityPostList!.pageCount;
+              response = await http.get(Uri.http(backendDomain, '/api/community', _encodeQueryComponent(query)));
+
+              if (response.statusCode == 200) {
+                Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+
+                communityForum.communityPost = CommunityPost.init(query, body['post']);
+                communityForum.communityPostList = CommunityPostList.init(query, body['page']);
+                communityForum.communityCommentList = CommunityCommentList.init(query, body['comment']);
+                communityForum.categoryList = CategoryList.init(body['category']);
+                if (body.containsKey('page_num')) communityForum.communityPostList!.pageNum = body['page_num'];
+              }
+            }
+          }
+        }
       }
     }
 
@@ -265,7 +298,7 @@ class HandleCommunity {
     if (response.statusCode == 200) {
       Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
 
-      return CategoryList.init(body['categories']); // TODO:
+      return CategoryList.init(body['category']);
     } else {
       return [];
     }
@@ -287,7 +320,7 @@ class HandleCommunity {
     if (response.statusCode == 201) {
       Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
 
-      return CategoryList.init(body['categories']); // TODO:
+      return CategoryList.init(body['category']);
     } else if (response.statusCode == 400 && context.mounted) {
       showDialog(
         context: context,
@@ -337,7 +370,7 @@ class HandleCommunity {
     if (response.statusCode == 200) {
       Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
 
-      return CategoryList.init(body['categories']); // TODO:
+      return CategoryList.init(body['category']);
     } else if (response.statusCode == 400 && context.mounted) {
       showDialog(
         context: context,
@@ -385,7 +418,7 @@ class HandleCommunity {
     if (response.statusCode == 200) {
       Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
 
-      return CategoryList.init(body['categories']); // TODO:
+      return CategoryList.init(body['category']);
     } else if (response.statusCode == 404 && context.mounted) {
       showDialog(
         context: context,
@@ -411,7 +444,7 @@ class HandleCommunity {
 
       Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
 
-      return CategoryList.init(body['categories']); // TODO:
+      return CategoryList.init(body['category']);
     } else {
       errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
           'handle_community.dart', 'HandleCommunity.postPost'));
@@ -493,9 +526,28 @@ class HandleCommunity {
         await http.get(Uri.http(backendDomain, '/api/community/comment', _encodeQueryComponent(query)));
 
     if (response.statusCode == 200) {
-      Map<String, dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+      CommunityCommentList communityCommentList =
+          CommunityCommentList.init(query, jsonDecode(utf8.decode(response.bodyBytes))['comment'])!;
 
-      return CommunityCommentList.init(query, body['comment'])!;
+      if (communityCommentList.pageNum > 1 && communityCommentList.list!.isEmpty) {
+        query['page'] = 1;
+        response = await http.get(Uri.http(backendDomain, '/api/community/comment', _encodeQueryComponent(query)));
+        if (response.statusCode == 200) {
+          communityCommentList =
+              CommunityCommentList.init(query, jsonDecode(utf8.decode(response.bodyBytes))['comment'])!;
+
+          if (communityCommentList.pageCount > 1) {
+            query['page'] = communityCommentList.pageCount;
+            response = await http.get(Uri.http(backendDomain, '/api/community/comment', _encodeQueryComponent(query)));
+            if (response.statusCode == 200) {
+              communityCommentList =
+                  CommunityCommentList.init(query, jsonDecode(utf8.decode(response.bodyBytes))['comment'])!;
+            }
+          }
+        }
+      }
+
+      return communityCommentList;
     } else {
       return CommunityCommentList(postNum: query['page']);
     }
