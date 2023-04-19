@@ -26,10 +26,6 @@ class _TestPageState extends State<TestPage> {
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      if (context.mounted) ModifyCategory.dialog(context);
-    });
-
     return Scaffold(
       appBar: CustomAppBar.widget(context),
       body: Center(
