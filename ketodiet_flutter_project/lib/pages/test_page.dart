@@ -3,8 +3,11 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:ketodiet_flutter_project/handles/handle_community.dart';
 
+import '../modules/handle.dart';
+import '../secret.dart';
 import '../modules/app_bar.dart';
 
 class TestPage extends StatefulWidget {
@@ -37,6 +40,8 @@ class _TestPageState extends State<TestPage> {
           children: [
             testModule(communityDrop(context)),
             testModule(communityTestInit(context)),
+            testModule(settingsGet(context)),
+            testModule(settingsPatch(context)),
           ],
         ),
       ),
@@ -138,5 +143,56 @@ Widget communityTestInit(context) {
       }
     },
     child: const Text('Community Test init'),
+  );
+}
+
+Widget settingsGet(context) {
+  return ElevatedButton(
+    onPressed: () async {
+      http.Response response = await http.get(
+        Uri.http(backendDomain, '/api/settings'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+        },
+      );
+
+      print('StatusCode: ${response.statusCode}\n${jsonDecode(utf8.decode(response.bodyBytes))}');
+    },
+    child: const Text('PATCH settings'),
+  );
+}
+
+Widget settingsPatch(context) {
+  final controller = TextEditingController();
+  return Row(
+    children: [
+      Expanded(
+        child: TextField(
+          controller: controller,
+        ),
+      ),
+      ElevatedButton(
+        onPressed: () async {
+          http.Response response = await http.patch(
+            Uri.http(backendDomain, '/api/settings'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+            },
+            body: jsonEncode(
+              {
+                'num': controller.text,
+              },
+            ),
+          );
+
+          print('StatusCode: ${response.statusCode}\n${jsonDecode(utf8.decode(response.bodyBytes))}');
+        },
+        child: const Text('PATCH settings'),
+      ),
+    ],
   );
 }
