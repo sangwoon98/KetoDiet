@@ -302,10 +302,13 @@ class PostWidget {
                         barrierDismissible: true,
                       );
                     } else {
-                      communityPost.recommendList = await HandleCommunity.postRecommend(context, communityPost.postNum);
-                      if (communityPost.recommendList != null && communityPost.recommendList != []) {
-                        communityPost.recommend = communityPost.recommendList!.length;
-                        recommendController.add(true);
+                      if (snapshot.data != true) {
+                        communityPost.recommendList =
+                            await HandleCommunity.postRecommend(context, communityPost.postNum);
+                        if (communityPost.recommendList != null && communityPost.recommendList != []) {
+                          communityPost.recommend = communityPost.recommendList!.length;
+                          recommendController.add(true);
+                        }
                       }
                     }
                   },
@@ -346,6 +349,7 @@ class PostWidget {
         if (!snapshot.hasData) {
           streamController.add(communityCommentList);
         } else {
+          communityCommentList = snapshot.data!;
           int minPage = snapshot.data!.pageNum - 2;
           int maxPage = snapshot.data!.pageNum + 2;
 
@@ -616,10 +620,9 @@ class PostWidget {
                                       bool postSuccess = await HandleCommunity.postComment(
                                           context, communityCommentList.postNum, commentController.text);
                                       if (postSuccess && context.mounted) {
-                                        streamController.add(await HandleCommunity.getForum(
-                                            context, {'post': communityCommentList.postNum}).then((value) {
-                                          return value.communityCommentList!;
-                                        }));
+                                        CommunityForum newList = await HandleCommunity.getForum(
+                                            context, {'post': communityCommentList.postNum});
+                                        streamController.add(newList.communityCommentList!);
                                       } else {
                                         await HandleError.ifErroredPushError(context);
                                       }
