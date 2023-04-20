@@ -64,6 +64,7 @@ Content-Type: application/json
 ### 카테고리 조회 ###
 GET {{host}}/api/community/category
 
+
 ### 카테고리 추가 ###
 POST {{host}}/api/community/category
 Content-Type: application/json
@@ -99,3 +100,10 @@ POST {{host}}/api/community/recommend?post_num=1
 
 ### 추천 삭제 ###
 DELETE  {{host}}/api/community/recommend?post_num=1
+
+
+### 커트라인 조회 ###
+GET {{host}}/api/settings
+
+### 커트라인 수정 ###
+PATCH  {{host}}/api/settings

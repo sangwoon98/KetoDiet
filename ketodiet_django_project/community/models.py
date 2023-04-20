@@ -4,15 +4,16 @@ from django.utils import timezone
 class CommunityDB(models.Model):
     post_num=models.AutoField(primary_key=True)
     id = models.IntegerField()
-    name=models.CharField(max_length=15)
-    category=models.CharField(max_length=50)
-    title=models.CharField(max_length=50)
-    content=models.CharField(max_length=1000)
+    name=models.CharField(max_length=12)
+    category=models.CharField(max_length=10)
+    title=models.CharField(max_length=30)
+    content = models.TextField()
     hit=models.IntegerField(default=0)
     recommend = models.JSONField(default=list)
     comment_count=models.IntegerField(default=0)
     create_date = models.DateTimeField(default=timezone.now)
     update_date = models.DateTimeField(default=timezone.now)
+    isRecommend= models.BooleanField(default=False)
     
     def save(self, *args, **kwargs):
         if not self.post_num:
@@ -28,8 +29,8 @@ class CommunitycommentDB(models.Model):
     comment_num=models.AutoField(primary_key=True)
     post_num=models.IntegerField()
     id = models.IntegerField()
-    name=models.CharField(max_length=15)
-    content=models.CharField(max_length=300)
+    name=models.CharField(max_length=12)
+    content = models.TextField()
     create_date= models.DateTimeField(default=timezone.now)
     update_date = models.DateTimeField(default=timezone.now)
     
