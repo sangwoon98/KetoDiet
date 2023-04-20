@@ -408,7 +408,7 @@ class Category(APIView):
                 categories = []
         except:
             return Response(status= status.HTTP_500_INTERNAL_SERVER_ERROR)
-        return Response({'categories': categories})
+        return Response({'category': categories})
     
     def post(self, request):
         id = AccountView.access_token_to_id(self, request)
