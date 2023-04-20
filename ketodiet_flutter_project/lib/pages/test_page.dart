@@ -4,11 +4,10 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:ketodiet_flutter_project/handles/handle_community.dart';
 
-import '../modules/handle.dart';
 import '../secret.dart';
 import '../modules/app_bar.dart';
+import '../modules/handle.dart';
 
 class TestPage extends StatefulWidget {
   final Map<String, dynamic> query;
@@ -158,7 +157,9 @@ Widget settingsGet(context) {
         },
       );
 
-      print('StatusCode: ${response.statusCode}\n${jsonDecode(utf8.decode(response.bodyBytes))}');
+      if (kDebugMode) {
+        print('StatusCode: ${response.statusCode}\n${jsonDecode(utf8.decode(response.bodyBytes))}');
+      }
     },
     child: const Text('PATCH settings'),
   );
@@ -189,7 +190,9 @@ Widget settingsPatch(context) {
             ),
           );
 
-          print('StatusCode: ${response.statusCode}\n${jsonDecode(utf8.decode(response.bodyBytes))}');
+          if (kDebugMode) {
+            print('StatusCode: ${response.statusCode}\n${jsonDecode(utf8.decode(response.bodyBytes))}');
+          }
         },
         child: const Text('PATCH settings'),
       ),
