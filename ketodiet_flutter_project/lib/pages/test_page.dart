@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ketodiet_flutter_project/handles/handle_community.dart';
 
@@ -87,7 +88,9 @@ Widget communityDrop(context) {
         await HandleCommunity.deletePost(context, element);
       }
 
-      print('Community All Drop Success!!!');
+      if (kDebugMode) {
+        print('Community All Drop Success!!!');
+      }
     },
     child: const Text('Community All Drop'),
   );
@@ -130,7 +133,9 @@ Widget communityTestInit(context) {
         }
       }
 
-      print('Community Test init Success!!!');
+      if (kDebugMode) {
+        print('Community Test init Success!!!');
+      }
     },
     child: const Text('Community Test init'),
   );

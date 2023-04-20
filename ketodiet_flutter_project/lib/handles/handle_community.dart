@@ -65,7 +65,7 @@ class CommunityPost {
       commentCount: body['comment_count'],
       createDate: DateTime.parse(body['create_date']).toLocal(),
       updateDate: DateTime.parse(body['update_date']).toLocal(),
-      isRecommend: false, // body['isRecommend'], //TODO:
+      isRecommend: body['isRecommend'],
     );
   }
 }
@@ -132,7 +132,7 @@ class CommunityPostList {
         recommendList: element['recommend'],
         commentCount: element['comment_count'],
         createDate: DateTime.parse(element['create_date']).toLocal(),
-        isRecommend: false, // body['isRecommend'], //TODO:
+        isRecommend: element['isRecommend'],
       ));
     }
 
