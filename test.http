@@ -106,4 +106,8 @@ DELETE  {{host}}/api/community/recommend?post_num=1
 GET {{host}}/api/settings
 
 ### 커트라인 수정 ###
+Content-Type: application/json
 PATCH  {{host}}/api/settings
+{
+    "num":10
+}
