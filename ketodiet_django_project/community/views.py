@@ -54,7 +54,7 @@ class CommunityList(generics.ListAPIView):
         target = self.request.query_params.get('target')
         keyword = self.request.query_params.get('keyword')
         isRecommend = self.request.query_params.get('isRecommend')
-        recommend = self.request.query_params.get('recommend')
+        # recommend = self.request.query_params.get('recommend')
         
         category = urllib.parse.unquote(category) if category else None
         target = urllib.parse.unquote(target) if target else None
@@ -66,14 +66,14 @@ class CommunityList(generics.ListAPIView):
         if category:
             queryset = CommunityDB.objects.all().order_by('-post_num').filter(category=category)
 
-        if recommend:
-            queryset = CommunityDB.objects.all().order_by('-post_num').filter(isRecommend=True)
-            
-        if recommend and category:
-            queryset = CommunityDB.objects.all().order_by('-post_num').filter(category=category).filter(isRecommend=True)
-            
         if isRecommend:
             queryset = CommunityDB.objects.all().order_by('-post_num').filter(isRecommend=True)
+            
+        # if recommend and category:
+        #     queryset = CommunityDB.objects.all().order_by('-post_num').filter(category=category).filter(isRecommend=True)
+            
+        if isRecommend and category:
+            queryset = CommunityDB.objects.all().order_by('-post_num').filter(category=category).filter(isRecommend=True)
         
         if target and keyword:
             
@@ -135,7 +135,7 @@ class CommunityView(APIView):
         category = self.request.query_params.get('category')
         keyword = self.request.query_params.get('keyword')
         target = self.request.query_params.get('target')
-        recommend = self.request.query_params.get('recommend')
+        isRecommend = self.request.query_params.get('isRecommend')
         categories = CategoryDB.objects.all().values_list('categorys', flat=True)
  
         if page:
@@ -179,7 +179,7 @@ class CommunityView(APIView):
                 http_request.GET['category']=category
                 http_request.GET['target']=target
                 http_request.GET['keyword']=keyword
-                http_request.GET['recommend']=recommend
+                http_request.GET['isRecommend']=isRecommend
                 list_serializer = CommunityList.as_view()(http_request).data
         #__________________________________댓글_____________________________________________________
         
