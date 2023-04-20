@@ -30,6 +30,7 @@ class CommunityPost {
   int? hit, recommend, commentCount;
   List<dynamic>? recommendList;
   DateTime? createDate, updateDate;
+  bool isRecommend;
 
   CommunityPost({
     required this.postNum,
@@ -42,6 +43,7 @@ class CommunityPost {
     this.recommendList,
     this.createDate,
     this.updateDate,
+    this.isRecommend = false,
   }) {
     recommendList ??= [];
     recommend ??= recommendList!.length;
@@ -63,6 +65,7 @@ class CommunityPost {
       commentCount: body['comment_count'],
       createDate: DateTime.parse(body['create_date']).toLocal(),
       updateDate: DateTime.parse(body['update_date']).toLocal(),
+      isRecommend: body['isRecommend'],
     );
   }
 }
@@ -72,7 +75,7 @@ class CommunityPostList {
   late int pageNum;
   String? category, target, keyword;
   int? pageCount;
-  bool? recommend;
+  bool? isRecommend;
 
   CommunityPostList({
     this.pageNum = 0,
@@ -81,7 +84,7 @@ class CommunityPostList {
     this.keyword,
     this.list,
     this.pageCount,
-    this.recommend,
+    this.isRecommend,
   }) {
     list ??= [];
   }
@@ -103,8 +106,8 @@ class CommunityPostList {
         case 'keyword':
           communityPostList.keyword = query[element];
           break;
-        case 'recommend':
-          communityPostList.recommend = query[element];
+        case 'isRecommend':
+          communityPostList.isRecommend = query[element];
           break;
       }
     }
@@ -130,6 +133,7 @@ class CommunityPostList {
         recommendList: element['recommend'],
         commentCount: element['comment_count'],
         createDate: DateTime.parse(element['create_date']).toLocal(),
+        isRecommend: element['isRecommend'],
       ));
     }
 
@@ -643,7 +647,7 @@ class HandleCommunity {
     if (query.isEmpty) query = {'page': 1};
 
     for (var element in query.keys) {
-      const validateParam = ['page', 'post', 'category', 'target', 'keyword', 'recommend'];
+      const validateParam = ['page', 'post', 'category', 'target', 'keyword', 'isRecommend'];
       if (!validateParam.contains(element)) return {};
     }
 
@@ -669,12 +673,12 @@ class HandleCommunity {
       if (query['keyword'] is! String) query['keyword'] = query['keyword'].toString();
     }
 
-    if (query.containsKey('recommend')) {
-      if (query['recommend'] is String) {
-        String stringBool = query['recommend'];
-        if (stringBool.toLowerCase() == 'true') query['recommend'] = true;
+    if (query.containsKey('isRecommend')) {
+      if (query['isRecommend'] is String) {
+        String stringBool = query['isRecommend'];
+        if (stringBool.toLowerCase() == 'true') query['isRecommend'] = true;
       }
-      if (query['recommend'] is! bool || query['recommend'] == false) return {};
+      if (query['isRecommend'] is! bool || query['isRecommend'] == false) return {};
     }
 
     return query;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ketodiet_flutter_project/handles/handle_community.dart';
 import 'package:ketodiet_flutter_project/pages/community_page.dart';
 
 import '../modules/app_bar.dart';
@@ -28,11 +29,42 @@ class _TestPageState extends State<TestPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar.widget(context),
-      body: Center(
-        child: Column(
-          children: const [],
-        ),
-      ),
+      body: ForumWidget.widget(
+          context,
+          CommunityForum(
+            categoryList: ['testCategory'],
+            communityPost: CommunityPost(
+              postNum: 1,
+              category: 'testCategory',
+              title: 'testTitle',
+              name: 'testName',
+              content: 'testContent',
+              hit: 0,
+              commentCount: 0,
+              recommendList: [1, 2, 3, 4, 5],
+              createDate: DateTime.now(),
+              updateDate: DateTime.now(),
+              isRecommend: true,
+            ),
+            communityCommentList: CommunityCommentList(postNum: 1, pageCount: 1, pageNum: 1, list: []),
+            communityPostList: CommunityPostList(
+              pageNum: 1,
+              pageCount: 1,
+              list: [
+                CommunityPost(
+                  postNum: 1,
+                  category: 'testCategory',
+                  title: 'testTitle',
+                  name: 'testName',
+                  hit: 0,
+                  commentCount: 0,
+                  recommendList: [1, 2, 3, 4, 5],
+                  createDate: DateTime.now(),
+                  isRecommend: true,
+                ),
+              ],
+            ),
+          )),
     );
   }
 }

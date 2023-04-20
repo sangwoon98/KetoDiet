@@ -206,6 +206,12 @@ class PostWidget {
             padding: const EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 5.0),
             child: Row(
               children: [
+                communityPost.isRecommend
+                    ? const Padding(
+                        padding: EdgeInsets.only(right: 5.0),
+                        child: Icon(Icons.star_rate_rounded, size: 20.0, color: Colors.amberAccent),
+                      )
+                    : const SizedBox(),
                 Expanded(
                   child: Text(
                     communityPost.title!,
@@ -1002,8 +1008,8 @@ class PostListWidget {
             Navigator.pushNamedAndRemoveUntil(context, '/community', (_) => false);
           },
           style: ButtonStyle(
-            foregroundColor: MaterialStateProperty.all(postList.recommend == null ? Colors.white : Colors.black),
-            backgroundColor: MaterialStateProperty.all(postList.recommend == null ? Colors.green : Colors.white),
+            foregroundColor: MaterialStateProperty.all(postList.isRecommend == null ? Colors.white : Colors.black),
+            backgroundColor: MaterialStateProperty.all(postList.isRecommend == null ? Colors.green : Colors.white),
             elevation: MaterialStateProperty.all(0.0),
             shape: MaterialStateProperty.all(
               const RoundedRectangleBorder(
@@ -1029,11 +1035,11 @@ class PostListWidget {
       height: 40.0,
       child: ElevatedButton(
           onPressed: () {
-            Navigator.pushNamedAndRemoveUntil(context, '/community?page=1&recommend=true', (_) => false);
+            Navigator.pushNamedAndRemoveUntil(context, '/community?page=1&isRecommend=true', (_) => false);
           },
           style: ButtonStyle(
-            foregroundColor: MaterialStateProperty.all(postList.recommend == true ? Colors.white : Colors.black),
-            backgroundColor: MaterialStateProperty.all(postList.recommend == true ? Colors.green : Colors.white),
+            foregroundColor: MaterialStateProperty.all(postList.isRecommend == true ? Colors.white : Colors.black),
+            backgroundColor: MaterialStateProperty.all(postList.isRecommend == true ? Colors.green : Colors.white),
             elevation: MaterialStateProperty.all(0.0),
             shape: MaterialStateProperty.all(
               const RoundedRectangleBorder(
@@ -1140,7 +1146,7 @@ class PostListWidget {
                       String keyword = Uri.encodeComponent(searchController.text);
 
                       String query = 'page=1&target=$target&keyword=$keyword';
-                      if (postList.recommend == true) query = '$query&recommend=true';
+                      if (postList.isRecommend == true) query = '$query&isRecommend=true';
 
                       Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
                     } else {
@@ -1179,7 +1185,7 @@ class PostListWidget {
                     String keyword = Uri.encodeComponent(searchController.text);
 
                     String query = 'page=1&target=$target&keyword=$keyword';
-                    if (postList.recommend == true) query = '$query&recommend=true';
+                    if (postList.isRecommend == true) query = '$query&isRecommend=true';
 
                     Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
                   } else {
@@ -1386,7 +1392,7 @@ class PostListWidget {
           String query = 'page=1';
           if (postList.target is String) query = '$query&target=${postList.target}';
           if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
-          if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
+          if (postList.isRecommend is bool) query = '$query&isRecommend=${postList.isRecommend}';
 
           Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
         },
@@ -1415,7 +1421,7 @@ class PostListWidget {
         String query = 'page=1&category=${Uri.encodeComponent(category)}';
         if (postList.target is String) query = '$query&target=${postList.target}';
         if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
-        if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
+        if (postList.isRecommend is bool) query = '$query&isRecommend=${postList.isRecommend}';
 
         Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
       },
@@ -1473,7 +1479,7 @@ class PostListWidget {
         if (postList.category is String) query = '$query&category=${Uri.encodeQueryComponent(postList.category!)}';
         if (postList.target is String) query = '$query&target=${Uri.encodeQueryComponent(postList.target!)}';
         if (postList.keyword is String) query = '$query&keyword=${Uri.encodeQueryComponent(postList.keyword!)}';
-        if (postList.recommend == true) query = '$query&recommend=true';
+        if (postList.isRecommend == true) query = '$query&isRecommend=true';
 
         WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
           Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
@@ -1503,6 +1509,10 @@ class PostListWidget {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 2.0),
+                      post.isRecommend
+                          ? const Icon(Icons.star_rate_rounded, size: 20.0, color: Colors.amberAccent)
+                          : const SizedBox(),
                       const SizedBox(width: 2.0),
                       Text(post.title!),
                       post.commentCount! > 0
@@ -1594,7 +1604,7 @@ class PostListWidget {
             if (postList.category is String) query = '$query&category=${Uri.encodeComponent(postList.category!)}';
             if (postList.target is String) query = '$query&target=${postList.target}';
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
-            if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
+            if (postList.isRecommend is bool) query = '$query&isRecommend=${postList.isRecommend}';
 
             Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
@@ -1627,7 +1637,7 @@ class PostListWidget {
             if (postList.category is String) query = '$query&category=${Uri.encodeComponent(postList.category!)}';
             if (postList.target is String) query = '$query&target=${postList.target}';
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
-            if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
+            if (postList.isRecommend is bool) query = '$query&isRecommend=${postList.isRecommend}';
 
             Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
@@ -1660,7 +1670,7 @@ class PostListWidget {
             if (postList.category is String) query = '$query&category=${Uri.encodeComponent(postList.category!)}';
             if (postList.target is String) query = '$query&target=${postList.target}';
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
-            if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
+            if (postList.isRecommend is bool) query = '$query&isRecommend=${postList.isRecommend}';
 
             Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
@@ -1700,7 +1710,7 @@ class PostListWidget {
             if (postList.category is String) query = '$query&category=${Uri.encodeComponent(postList.category!)}';
             if (postList.target is String) query = '$query&target=${postList.target}';
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
-            if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
+            if (postList.isRecommend is bool) query = '$query&isRecommend=${postList.isRecommend}';
 
             Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
@@ -1740,7 +1750,7 @@ class PostListWidget {
             if (postList.category is String) query = '$query&category=${Uri.encodeComponent(postList.category!)}';
             if (postList.target is String) query = '$query&target=${postList.target}';
             if (postList.keyword is String) query = '$query&keyword=${Uri.encodeComponent(postList.keyword!)}';
-            if (postList.recommend is bool) query = '$query&recommend=${postList.recommend}';
+            if (postList.isRecommend is bool) query = '$query&isRecommend=${postList.isRecommend}';
 
             Navigator.pushNamedAndRemoveUntil(context, '/community?$query', (_) => false);
           },
