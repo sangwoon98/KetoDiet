@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../modules/app_bar.dart';
+import '../modules/layout.dart';
 
 class InfoPage extends StatefulWidget {
   final Map<String, dynamic> query;
@@ -25,11 +25,9 @@ class _InfoPageState extends State<InfoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar.widget(context),
-      body: const Center(
-        child: Text('키토제닉이란?'),
-      ),
+    return CustomScaffold.scaffold(
+      context: context,
+      body: const Center(child: Text('키토제닉이란?')),
     );
   }
 }

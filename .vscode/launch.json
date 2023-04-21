@@ -16,9 +16,9 @@
         "127.0.0.1",
         "--web-port",
         "8000",
-        "--machine",
-        "--web-renderer",
-        "html"
+        "--machine"
+        // "--web-renderer",
+        // "html"
       ]
     },
     {
