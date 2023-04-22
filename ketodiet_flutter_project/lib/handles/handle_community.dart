@@ -671,9 +671,8 @@ class HandleCommunity {
     if (query.containsKey('page')) {
       if (query['page'] is String) query['page'] = int.tryParse(query['page']);
       if (query['page'] is! int) return {};
+      if (query['page'] < 1) query['page'] = 1;
     }
-
-    if (query['page'] < 1) query['page'] = 0;
 
     if (query.containsKey('category')) {
       if (query['category'] is! String) query['category'] = query['category'].toString();
