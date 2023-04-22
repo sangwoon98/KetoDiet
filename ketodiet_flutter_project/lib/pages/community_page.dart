@@ -107,7 +107,7 @@ class PostWidget {
 
     Widget modifyOption = const SizedBox();
 
-    if (accountManager.accountArguments.name == communityPost.name) {
+    if (accountManager.accountArguments.uid.toString() == communityPost.uid.toString()) {
       modifyOption = Row(
         children: [
           const SizedBox(width: 10.0),
@@ -747,7 +747,7 @@ class PostWidget {
 
         Widget modifyOption = const SizedBox();
 
-        if (accountManager.accountArguments.name == comment.name) {
+        if (accountManager.accountArguments.uid.toString() == comment.uid.toString()) {
           modifyOption = Row(
             children: [
               const SizedBox(width: 10.0),
@@ -1224,7 +1224,10 @@ class PostListWidget {
               ),
             ),
             Positioned(
+              top: 0.0,
               right: 0.0,
+              bottom: 0.0,
+              width: 70.0,
               child: ElevatedButton(
                 onPressed: () async {
                   if (searchController.text.isNotEmpty) {
@@ -1260,7 +1263,6 @@ class PostListWidget {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  fixedSize: const Size(70.0, 40.0),
                   elevation: 0.0,
                   shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.only(
@@ -1283,56 +1285,61 @@ class PostListWidget {
       color: Colors.white,
       elevation: 8.0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
-      child: ElevatedButton(
-        onPressed: () async {
-          if (accountManager.get().name is! String && context.mounted) {
-            await showDialog(
-              context: context,
-              builder: (context) {
-                return AlertDialog(
-                  title: const Text('권한 없음'),
-                  content: const Text('회원가입 및 로그인 후 회원만 이용 가능합니다.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: const Text('취소'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        await HandleAccount.signIn(context);
-                        if (context.mounted) Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        fixedSize: const Size(80.0, 40.0),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20.0),
-                        ),
+      child: SizedBox(
+        width: 80.0,
+        height: 40.0,
+        child: ElevatedButton(
+          onPressed: () async {
+            if (accountManager.get().name is! String && context.mounted) {
+              await showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text('권한 없음'),
+                    content: const Text('회원가입 및 로그인 후 회원만 이용 가능합니다.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text('취소'),
                       ),
-                      child: const Text('로그인'),
+                      ElevatedButton(
+                        onPressed: () async {
+                          await HandleAccount.signIn(context);
+                          if (context.mounted) Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          fixedSize: const Size(80.0, 40.0),
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20.0),
+                          ),
+                        ),
+                        child: const Text('로그인'),
+                      ),
+                    ],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20.0),
                     ),
-                  ],
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20.0),
-                  ),
-                );
-              },
-              barrierDismissible: true,
-            );
-          }
+                  );
+                },
+                barrierDismissible: true,
+              );
+            }
 
-          if (accountManager.get().name is String) {
-            if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, '/community/post', (_) => false);
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          fixedSize: const Size(80.0, 40.0),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20.0),
+            if (accountManager.get().name is String) {
+              if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, '/community/post', (_) => false);
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            fixedSize: const Size(80.0, 40.0),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.0),
+            ),
           ),
+          child: const Text('글쓰기'),
         ),
-        child: const Text('글쓰기'),
       ),
     );
   }
@@ -1349,7 +1356,6 @@ class PostListWidget {
           SizedBox(height: 30.0),
           Text('글이 존재하지 않습니다.'),
           SizedBox(height: 30.0),
-          Divider(height: 1.0, thickness: 1.0, color: Colors.grey),
         ],
       ));
     } else if (postList.list!.isEmpty) {
@@ -1358,7 +1364,6 @@ class PostListWidget {
           SizedBox(height: 30.0),
           Text('글이 존재하지 않습니다.'),
           SizedBox(height: 30.0),
-          Divider(height: 1.0, thickness: 1.0, color: Colors.grey),
         ],
       ));
     } else {
@@ -1366,7 +1371,7 @@ class PostListWidget {
         list.add(_postRow(context, postList, element));
       }
     }
-    list.add(const Divider(height: 1.0, thickness: 1.0, color: Colors.grey));
+    list.add(const Divider(height: 2.0, thickness: 2.0, color: Colors.grey));
 
     return Column(
       children: list,
@@ -1503,12 +1508,12 @@ class PostListWidget {
           const SizedBox(height: 10.0),
           Row(
             children: [
-              _expanded(const Text('번호', textAlign: TextAlign.center)),
-              _expanded(const Text('제목'), 6),
-              _expanded(const Text('글쓴이'), 2),
-              const SizedBox(width: 80.0, child: Text('작성일', textAlign: TextAlign.center)),
-              _expanded(const Text('조회', textAlign: TextAlign.center)),
-              _expanded(const Text('추천', textAlign: TextAlign.center)),
+              _expanded(const Text('번호', textAlign: TextAlign.center), 2),
+              _expanded(const Text('제목'), 8),
+              _expanded(const Text('글쓴이'), 3),
+              const SizedBox(width: 100.0, child: Text('작성일', textAlign: TextAlign.center)),
+              _expanded(const Text('조회', textAlign: TextAlign.center), 2),
+              _expanded(const Text('추천', textAlign: TextAlign.center), 2),
             ],
           ),
           const SizedBox(height: 10.0),
@@ -1553,8 +1558,10 @@ class PostListWidget {
             const SizedBox(height: 10.0),
             Row(
               children: [
-                _expanded(Text(post.postNum.toString(),
-                    textAlign: TextAlign.center, overflow: TextOverflow.fade, maxLines: 1, softWrap: false)),
+                _expanded(
+                    Text(post.postNum.toString(),
+                        textAlign: TextAlign.center, overflow: TextOverflow.fade, maxLines: 1, softWrap: false),
+                    2),
                 _expanded(
                     Row(
                       children: [
@@ -1586,17 +1593,23 @@ class PostListWidget {
                             : const SizedBox(),
                       ],
                     ),
-                    6),
-                _expanded(Text(post.name!, overflow: TextOverflow.fade, maxLines: 1, softWrap: false), 2),
-                SizedBox(width: 80.0, child: Text(createDateString, textAlign: TextAlign.center)),
-                _expanded(Text(post.hit.toString(),
-                    textAlign: TextAlign.center, overflow: TextOverflow.fade, maxLines: 1, softWrap: false)),
-                _expanded(Text(post.recommend.toString(),
-                    textAlign: TextAlign.center, overflow: TextOverflow.fade, maxLines: 1, softWrap: false)),
+                    8),
+                _expanded(Text(post.name!, overflow: TextOverflow.fade, maxLines: 1, softWrap: false), 3),
+                SizedBox(width: 100.0, child: Text(createDateString, textAlign: TextAlign.center)),
+                _expanded(
+                    Text(post.hit.toString(),
+                        textAlign: TextAlign.center, overflow: TextOverflow.fade, maxLines: 1, softWrap: false),
+                    2),
+                _expanded(
+                    Text(post.recommend.toString(),
+                        textAlign: TextAlign.center, overflow: TextOverflow.fade, maxLines: 1, softWrap: false),
+                    2),
               ],
             ),
             const SizedBox(height: 10.0),
-            const Divider(height: 1.0, thickness: 1.0, color: Colors.grey),
+            post.postNum == postList.list!.last.postNum
+                ? const SizedBox()
+                : const Divider(height: 1.0, thickness: 1.0, color: Colors.grey),
           ],
         ),
       );
@@ -1673,7 +1686,9 @@ class PostListWidget {
                 ],
               ),
               const SizedBox(height: 10.0),
-              const Divider(height: 1.0, thickness: 1.0, color: Colors.grey),
+              post.postNum == postList.list!.last.postNum
+                  ? const SizedBox()
+                  : const Divider(height: 1.0, thickness: 1.0, color: Colors.grey),
             ],
           ),
         ),
