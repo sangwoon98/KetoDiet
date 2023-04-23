@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../modules/app_bar.dart';
+import '../modules/layout.dart';
 
 class ChallengePage extends StatefulWidget {
   final Map<String, dynamic> query;
@@ -25,11 +25,9 @@ class _ChallengePageState extends State<ChallengePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar.widget(context),
-      body: const Center(
-        child: Text('키토 챌린지'),
-      ),
+    return CustomScaffold.scaffold(
+      context: context,
+      body: const Center(child: Text('키토 챌린지')),
     );
   }
 }

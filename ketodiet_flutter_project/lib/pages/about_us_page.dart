@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../modules/app_bar.dart';
+import '../modules/layout.dart';
 
 class AboutUsPage extends StatefulWidget {
   final Map<String, dynamic> query;
@@ -25,11 +25,9 @@ class _AboutUsPageState extends State<AboutUsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar.widget(context),
-      body: const Center(
-        child: Text('우리는 누구인가요?'),
-      ),
+    return CustomScaffold.scaffold(
+      context: context,
+      body: const Center(child: Text('우리는 누구인가요?')),
     );
   }
 }

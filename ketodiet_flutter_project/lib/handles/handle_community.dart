@@ -26,6 +26,7 @@ class CommunityForum {
 
 class CommunityPost {
   int postNum;
+  dynamic uid;
   String? category, title, name, content;
   int? hit, recommend, commentCount;
   List<dynamic>? recommendList;
@@ -34,6 +35,7 @@ class CommunityPost {
 
   CommunityPost({
     required this.postNum,
+    this.uid,
     this.category,
     this.title,
     this.name,
@@ -56,6 +58,7 @@ class CommunityPost {
 
     return CommunityPost(
       postNum: query['post'],
+      uid: body['id'],
       category: body['category'],
       title: body['title'],
       name: body['name'],
@@ -142,12 +145,14 @@ class CommunityPostList {
 
 class CommunityComment {
   int commentNum;
+  dynamic uid;
   String name, content;
   DateTime createDate, updateDate;
 
   CommunityComment({
     required this.commentNum,
     required this.name,
+    required this.uid,
     required this.content,
     required this.createDate,
     required this.updateDate,
@@ -193,6 +198,7 @@ class CommunityCommentList {
     for (var element in body['results']) {
       communityCommentList.list!.add(CommunityComment(
         commentNum: element['comment_num'],
+        uid: element['id'],
         name: element['name'],
         content: element['content'],
         createDate: DateTime.parse(element['create_date']).toLocal(),
@@ -665,6 +671,7 @@ class HandleCommunity {
     if (query.containsKey('page')) {
       if (query['page'] is String) query['page'] = int.tryParse(query['page']);
       if (query['page'] is! int) return {};
+      if (query['page'] < 1) query['page'] = 1;
     }
 
     if (query.containsKey('category')) {

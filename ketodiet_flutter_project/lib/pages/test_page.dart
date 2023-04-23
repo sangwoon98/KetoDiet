@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../secret.dart';
-import '../modules/app_bar.dart';
+import '../modules/layout.dart';
 import '../modules/handle.dart';
 
 class TestPage extends StatefulWidget {
@@ -32,8 +32,8 @@ class _TestPageState extends State<TestPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar.widget(context),
+    return CustomScaffold.scaffold(
+      context: context,
       body: Center(
         child: Column(
           children: [
@@ -161,7 +161,7 @@ Widget settingsGet(context) {
         print('StatusCode: ${response.statusCode}\n${jsonDecode(utf8.decode(response.bodyBytes))}');
       }
     },
-    child: const Text('PATCH settings'),
+    child: const Text('GET settings'),
   );
 }
 

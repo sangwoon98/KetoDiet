@@ -320,6 +320,7 @@ class SetNameWidget {
   }
 
   static Widget _textField() {
+    registerController.clear();
     return SizedBox(
       width: 300.0,
       child: Form(
