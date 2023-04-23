@@ -18,7 +18,7 @@ class TestPage extends StatefulWidget {
   State<TestPage> createState() => _TestPageState();
 }
 
-class _TestPageState extends State<TestPage> {
+class _TestPageState extends State<TestPage> with TickerProviderStateMixin {
   @override
   void initState() {
     if (widget.query.isNotEmpty) {
@@ -32,30 +32,62 @@ class _TestPageState extends State<TestPage> {
 
   @override
   Widget build(BuildContext context) {
+    List<Widget> list = [
+      communityDrop(context),
+      communityTestInit(context),
+      settingsGet(context),
+      settingsPatch(context)
+    ];
+
+    for (var i = 0; i < list.length; i++) {
+      list[i] = testModule(list[i], i);
+    }
+
     return CustomScaffold.scaffold(
       context: context,
       body: Center(
         child: Column(
-          children: [
-            testModule(communityDrop(context)),
-            testModule(communityTestInit(context)),
-            testModule(settingsGet(context)),
-            testModule(settingsPatch(context)),
-          ],
+          children: list,
         ),
       ),
     );
   }
-}
 
-Widget testModule(widget) {
-  return SizedBox(
-    width: 500.0,
-    child: Padding(
-      padding: const EdgeInsets.all(10.0),
-      child: widget,
-    ),
-  );
+  Widget testModule(Widget widget, int sequence) {
+    late final AnimationController controller = AnimationController(
+      duration: Duration(milliseconds: 500 + (sequence * 100)),
+      vsync: this,
+    );
+
+    late final Animation<double> opacity = CurvedAnimation(
+      parent: controller,
+      curve: Curves.linear,
+    );
+
+    late final Animation<Offset> position = Tween<Offset>(
+      begin: const Offset(0.0, 0.5),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: controller,
+      curve: Curves.linear,
+    ));
+
+    controller.forward();
+
+    return FadeTransition(
+      opacity: opacity,
+      child: SlideTransition(
+        position: position,
+        child: SizedBox(
+          width: 500.0,
+          child: Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: widget,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 Widget communityDrop(context) {

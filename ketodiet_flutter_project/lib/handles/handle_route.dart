@@ -9,6 +9,8 @@ import '../pages/info_page.dart';
 import '../pages/main_page.dart';
 import '../pages/test_page.dart';
 
+String? currentPath;
+
 class HandleRoute {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     List<String> uri = settings.name!.split('?');
@@ -27,10 +29,11 @@ class HandleRoute {
       query['additional'] = settings.arguments;
     }
 
-    // TODO: Build시 삭제
     if (kDebugMode) {
       print('URI: $uri\nPATH: $path\nQUERY:$query\nSETTINGS:$settings');
     }
+
+    currentPath = settings.name;
 
     switch (path) {
       case '/':

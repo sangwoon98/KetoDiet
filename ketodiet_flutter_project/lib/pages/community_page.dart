@@ -61,7 +61,6 @@ class ForumWidget {
   }
 }
 
-// TODO: PostWidget Responsive
 class PostWidget {
   static List<Widget> widget(
       BuildContext context, CommunityPost? communityPost, CommunityCommentList? communityCommentList) {
