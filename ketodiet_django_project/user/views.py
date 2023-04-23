@@ -1,4 +1,5 @@
 from user.models import UserDB
+from community.models import CommunityDB, CommunitycommentDB
 from rest_framework.response import Response
 # from rest_framework.decorators import api_view
 from rest_framework import status
@@ -83,8 +84,11 @@ class AccountView(APIView):
             return Response(status=status.HTTP_409_CONFLICT) # 아이디 중복
         else:
             user = UserDB.objects.get(id=id)
+            nowname = user.name
             user.name = newname
             user.save()
+            CommunityDB.objects.filter(name = nowname).update(name = newname) # 현재 이름 으로 작성된 커뮤니티 전부 변경
+            CommunitycommentDB.objects.filter(name = nowname).update(name = newname) # 현재 이름 으로 작성된 댓글 전부 변경
             return Response(status=status.HTTP_200_OK)
             
             

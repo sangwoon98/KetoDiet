@@ -39,7 +39,7 @@ class CommunityDBSerializer(serializers.ModelSerializer):
 class CommunityDBSerializerNoContent(serializers.ModelSerializer):
     class Meta:
         model = CommunityDB
-        fields = 'post_num','category','title','name','create_date','update_date','hit','recommend','comment_count','isRecommend' # 모든값들을 직렬화 시킴
+        fields = 'post_num','category','title','name','create_date','update_date','hit','recommend','comment_count','isRecommend','id' # 모든값들을 직렬화 시킴
         
 
 class CommunityListPagination(pagination.PageNumberPagination): # DRF에서 제공하는 pagination을 상속
@@ -163,6 +163,9 @@ class CommunityView(APIView):
             
             if category:
                 all_list=all_list.filter(category=category)
+            if isRecommend:
+                all_list=all_list.filter(isRecommend=True)
+                
             if qs:
                 page_number = get_post_num_order(post_num, all_list, 30)
             else:
@@ -171,6 +174,7 @@ class CommunityView(APIView):
             if page_number is None:
                 list_serializer = []  # 목록에 없을때, 이게 필요한가..?
             else:
+                print(page_number)
                 http_request = HttpRequest()
                 http_request.method = 'GET'
                 http_request.META['SERVER_NAME'] = request.META['SERVER_NAME']
@@ -308,7 +312,7 @@ class CommentDBSerializer(serializers.ModelSerializer):
 class Comment_notall_DBSerializer(serializers.ModelSerializer): 
     class Meta:
         model = CommunitycommentDB
-        fields = 'comment_num','name','content','create_date','update_date' 
+        fields = 'comment_num','name','content','create_date','update_date','id' 
         
 class CommentListPagination(pagination.PageNumberPagination): # DRF에서 제공하는 pagination을 상속
     page_size = 20
@@ -510,8 +514,9 @@ class Recommend(APIView):
             if id not in recommends:
                 recommends.append(id)
                 community.recommend = recommends
-                cutline=AdminSettingsDB.objects.get(key='recommend_cutline')
-                if len(community.recommend) >= cutline:
+                cutline=AdminSettingsDB.objects.get(key='recommend_cutline').int
+                val=len(community.recommend)
+                if  val >= cutline:
                     community.isRecommend = True
                 community.save()
                     
