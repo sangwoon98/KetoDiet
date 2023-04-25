@@ -655,6 +655,52 @@ class HandleCommunity {
     }
   }
 
+  static Future<int?> getRecommendCutLine(BuildContext context) async {
+    http.Response response = await http.get(
+      Uri.http(backendDomain, '/api/settings'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      Map body = jsonDecode(utf8.decode(response.bodyBytes));
+
+      return body['cutline'];
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.getRecommendCutLine'));
+    }
+
+    return null;
+  }
+
+  static Future<bool> patchRecommendCutLine(BuildContext context, int cutLine) async {
+    http.Response response = await http.patch(
+      Uri.http(backendDomain, '/api/settings'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+      body: jsonEncode(
+        {
+          'num': cutLine,
+        },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.getRecommendCutLine'));
+      return false;
+    }
+  }
+
   static Map<String, dynamic> _initQuery(Map<String, dynamic> query) {
     if (query.isEmpty) query = {'page': 1};
 

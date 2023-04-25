@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:ketodiet_flutter_project/handles/handle_size.dart';
 
 import '../modules/layout.dart';
@@ -49,7 +48,8 @@ class InfoPageWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('키토제닉이란?', style: GoogleFonts.doHyeon(textStyle: const TextStyle(color: Colors.green, fontSize: 48.0))),
+        const SizedBox(height: 24.0),
+        const Text('키토제닉이란?', style: TextStyle(color: Colors.green, fontSize: 48.0, fontFamily: 'DoHyeon')),
         RichText(
           text: TextSpan(
             children: [
@@ -101,14 +101,14 @@ class InfoPageWidget {
               ),
               const TextSpan(text: '으로 인기를 얻고 있어요!'),
             ],
-            style: GoogleFonts.gowunDodum(textStyle: const TextStyle(color: Colors.black, fontSize: 24.0)),
+            style: const TextStyle(color: Colors.black, fontSize: 24.0, fontFamily: 'GowunDodum'),
           ),
         ),
         const SizedBox(height: 24.0),
-        Text('위험하지 않나요?', style: GoogleFonts.doHyeon(textStyle: const TextStyle(color: Colors.green, fontSize: 48.0))),
+        const Text('위험하지 않나요?', style: TextStyle(color: Colors.green, fontSize: 48.0, fontFamily: 'DoHyeon')),
         RichText(
-          text: TextSpan(
-            children: const [
+          text: const TextSpan(
+            children: [
               TextSpan(text: '키토제닉은 몇가지 위험이 있을 수 있어요. 탄수화물 섭취를 제한하다 보면, '),
               TextSpan(
                 text: '섬유질 섭취량이 감소할 수 있고,',
@@ -137,14 +137,14 @@ class InfoPageWidget {
                   text:
                       '그렇다고 모든 사람들에게 키토제닉 식이요법이 추천되는 것은 아니에요. 간에 관련한 질병이 있거나 당뇨가 있는 경우 등 의사나 전문가의 조언을 받고 상담하여 진행여부를 결정짓는 것이 바람직해요.'),
             ],
-            style: GoogleFonts.gowunDodum(textStyle: const TextStyle(color: Colors.black, fontSize: 24.0)),
+            style: TextStyle(color: Colors.black, fontSize: 24.0, fontFamily: 'GowunDodum'),
           ),
         ),
         const SizedBox(height: 24.0),
-        Text('부작용이 있나요?', style: GoogleFonts.doHyeon(textStyle: const TextStyle(color: Colors.green, fontSize: 48.0))),
+        const Text('부작용이 있나요?', style: TextStyle(color: Colors.green, fontSize: 48.0, fontFamily: 'DoHyeon')),
         RichText(
-          text: TextSpan(
-            children: const [
+          text: const TextSpan(
+            children: [
               TextSpan(text: ''),
               TextSpan(
                 text: '',
@@ -159,21 +159,22 @@ class InfoPageWidget {
               ),
               TextSpan(text: ' 되는것으로 알려져 있어요. 하지만 기존 식사 대비 간의 부하가 크게 걸리기 때문에, 주량 감소는 피하기가 어려워요.'),
             ],
-            style: GoogleFonts.gowunDodum(textStyle: const TextStyle(color: Colors.black, fontSize: 24.0)),
+            style: TextStyle(color: Colors.black, fontSize: 24.0, fontFamily: 'GowunDodum'),
           ),
         ),
         const SizedBox(height: 24.0),
-        Text('케토시스가 뭐에요?', style: GoogleFonts.doHyeon(textStyle: const TextStyle(color: Colors.green, fontSize: 48.0))),
+        const Text('케토시스가 뭐에요?', style: TextStyle(color: Colors.green, fontSize: 48.0, fontFamily: 'DoHyeon')),
         RichText(
-          text: TextSpan(
-            children: const [
+          text: const TextSpan(
+            children: [
               TextSpan(text: ''),
               TextSpan(
                 text: '',
                 style: TextStyle(shadows: [Shadow(blurRadius: 6.0, color: Colors.yellow)]),
               ),
               TextSpan(
-                  text: '케토시스는 탄수화물이 주 에너지원으로 쓰이는 대사 상태와 반대로 탄수화물 섭취가 제한되어 있거나 전혀 없는 상황에서 발생하는 대사 상태에요. 이 상태에서는 체내에서 '),
+                  text:
+                      '케토시스는 탄수화물이 주 에너지원으로 쓰이는 대사 상태와 반대로, 탄수화물 섭취가 제한되어 있거나 전혀 없는 상황에서 발생하는 대사 상태에요. 이 상태에서는 체내에서 '),
               TextSpan(
                 text: '지방 대사가 증가',
                 style: TextStyle(shadows: [Shadow(blurRadius: 6.0, color: Colors.yellow)]),
@@ -190,15 +191,14 @@ class InfoPageWidget {
               ),
               TextSpan(text: '돼요.'),
             ],
-            style: GoogleFonts.gowunDodum(textStyle: const TextStyle(color: Colors.black, fontSize: 24.0)),
+            style: TextStyle(color: Colors.black, fontSize: 24.0, fontFamily: 'GowunDodum'),
           ),
         ),
         const SizedBox(height: 24.0),
-        Text('마지막으로 정리해드릴께요!',
-            style: GoogleFonts.doHyeon(textStyle: const TextStyle(color: Colors.green, fontSize: 48.0))),
+        const Text('마지막으로 정리해드릴께요!', style: TextStyle(color: Colors.green, fontSize: 48.0, fontFamily: 'DoHyeon')),
         RichText(
-          text: TextSpan(
-            children: const [
+          text: const TextSpan(
+            children: [
               TextSpan(text: ''),
               TextSpan(
                 text: '',
@@ -218,7 +218,7 @@ class InfoPageWidget {
                 text: '그동안 다이어트에 실패한 것은 당신의 의지 문제가 아니에요. 온전히 호르몬 불균형의 문제이고 키토제닉은 그 호르몬 불균형을 다시 바로잡을 수 있는 식이요법',
                 style: TextStyle(shadows: [Shadow(blurRadius: 6.0, color: Colors.yellow)]),
               ),
-              TextSpan(text: '이에요.'),
+              TextSpan(text: '이에요.\n'),
               TextSpan(
                 text: '케톤은 체내에 탄수화물 에너지원이 부족한 경우 지방을 분해 하여 생성되는 에너지원',
                 style: TextStyle(shadows: [Shadow(blurRadius: 6.0, color: Colors.yellow)]),
@@ -308,15 +308,14 @@ class InfoPageWidget {
               ),
               TextSpan(text: '하고 의사 및 전문가와 상담 후 진행 여부를 결정하세요.'),
             ],
-            style: GoogleFonts.gowunDodum(textStyle: const TextStyle(color: Colors.black, fontSize: 24.0)),
+            style: TextStyle(color: Colors.black, fontSize: 24.0, fontFamily: 'GowunDodum'),
           ),
         ),
         const SizedBox(height: 24.0),
-        Text('그래서 어떻게 시작해야하나요?',
-            style: GoogleFonts.doHyeon(textStyle: const TextStyle(color: Colors.green, fontSize: 48.0))),
+        const Text('그래서 어떻게 시작해야하나요?', style: TextStyle(color: Colors.green, fontSize: 48.0, fontFamily: 'DoHyeon')),
         RichText(
-          text: TextSpan(
-            children: const [
+          text: const TextSpan(
+            children: [
               TextSpan(text: '저희 KetoDiet 커뮤니티에서 여러 사람들의 경험을 통한 정보를 얻고, '),
               TextSpan(
                 text: '키토 챌린지',
@@ -334,7 +333,7 @@ class InfoPageWidget {
               ),
               TextSpan(text: '해보세요!'),
             ],
-            style: GoogleFonts.gowunDodum(textStyle: const TextStyle(color: Colors.black, fontSize: 24.0)),
+            style: TextStyle(color: Colors.black, fontSize: 24.0, fontFamily: 'GowunDodum'),
           ),
         ),
         const SizedBox(height: 24.0),

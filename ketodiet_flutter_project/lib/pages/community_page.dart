@@ -1416,7 +1416,7 @@ class PostListWidget {
                     height: 24.0,
                     child: ElevatedButton(
                       onPressed: () {
-                        ModifyCategory.dialog(context);
+                        ModifyCommunity.dialog(context);
                       },
                       style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.zero,
@@ -2256,7 +2256,7 @@ class WritePost {
   }
 }
 
-class ModifyCategory {
+class ModifyCommunity {
   static void dialog(BuildContext context) {
     showDialog(
       context: context,
@@ -2267,7 +2267,165 @@ class ModifyCategory {
     );
   }
 
+  static Widget _padding(Widget child, double left, double top, double right, double bottom) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(left, top, right, bottom),
+      child: child,
+    );
+  }
+
+  static Widget _closeButton(BuildContext context) {
+    return TextButton(
+      onPressed: () async {
+        Navigator.pop(context);
+      },
+      child: const Text('닫기'),
+    );
+  }
+
   static AlertDialog _alertDialog(BuildContext context) {
+    return AlertDialog(
+      title: const Text('커뮤니티 관리'),
+      content: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _padding(
+              ElevatedButton(
+                onPressed: () async {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return _categoryModifyDialog(context);
+                    },
+                    barrierDismissible: true,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.black,
+                  backgroundColor: Colors.white,
+                  fixedSize: const Size(200.0, 50.0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20.0),
+                  ),
+                ),
+                child: const Text('카테고리 관리'),
+              ),
+              10,
+              10,
+              10,
+              10),
+          _padding(
+              ElevatedButton(
+                onPressed: () async {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return _recommendModifyDialog(context);
+                    },
+                    barrierDismissible: true,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.black,
+                  backgroundColor: Colors.white,
+                  fixedSize: const Size(200.0, 50.0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20.0),
+                  ),
+                ),
+                child: const Text('추천글 커트라인 관리'),
+              ),
+              10,
+              10,
+              10,
+              10),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text('닫기'),
+        ),
+      ],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20.0),
+      ),
+    );
+  }
+
+  static AlertDialog _recommendModifyDialog(BuildContext context) {
+    final TextEditingController textEditingController = TextEditingController();
+    final GlobalKey<FormState> globalKey = GlobalKey<FormState>();
+
+    return AlertDialog(
+      title: const Text('추천글 커트라인 관리'),
+      content: FutureBuilder(
+          future: HandleCommunity.getRecommendCutLine(context),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              textEditingController.text = snapshot.data.toString();
+
+              return SizedBox(
+                width: 300.0,
+                child: Form(
+                  key: globalKey,
+                  child: TextFormField(
+                    controller: textEditingController,
+                    decoration: const InputDecoration(
+                      labelText: '추천글 커트라인',
+                      hintText: '양의 정수만 입력해주세요.',
+                      border: OutlineInputBorder(),
+                    ),
+                    autofocus: true,
+                    validator: (value) {
+                      if (value!.isEmpty) {
+                        return '값을 입력해주세요.';
+                      } else if (int.tryParse(value) is! int) {
+                        return '정수만 입력해주세요.';
+                      } else if (int.tryParse(value)! < 1) {
+                        return '양의 정수만 입력해주세요.';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              );
+            } else {
+              return const SizedBox();
+            }
+          }),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+          },
+          child: const Text('닫기'),
+        ),
+        TextButton(
+          onPressed: () async {
+            if (globalKey.currentState!.validate()) {
+              bool success =
+                  await HandleCommunity.patchRecommendCutLine(context, int.tryParse(textEditingController.text)!);
+              if (success) {
+                if (context.mounted) Navigator.pop(context);
+              } else {
+                if (context.mounted) await HandleError.ifErroredPushError(context);
+              }
+            }
+          },
+          child: const Text('확인'),
+        ),
+      ],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20.0),
+      ),
+    );
+  }
+
+  static AlertDialog _categoryModifyDialog(BuildContext context) {
     return AlertDialog(
       title: const Text('카테고리 관리'),
       content: SizedBox(width: 400.0, height: 300.0, child: _content()),
@@ -2291,11 +2449,11 @@ class ModifyCategory {
     return StreamBuilder(
       stream: categoryListController.stream,
       builder: (context, snapshot) {
-        List<Widget> categoryList = [];
+        List<Widget> list = [];
 
         if (snapshot.hasData) {
           for (var element in snapshot.data!) {
-            categoryList.add(_item(context, categoryListController, element));
+            list.add(_item(context, categoryListController, element));
           }
         } else {
           HandleCommunity.getCategoryList(context).then((value) {
@@ -2303,13 +2461,13 @@ class ModifyCategory {
           });
         }
 
-        categoryList.add(_addCategory(context, categoryListController));
+        list.add(_addCategory(context, categoryListController));
 
         return ListView.builder(
           itemBuilder: (BuildContext context, int index) {
-            return categoryList[index];
+            return list[index];
           },
-          itemCount: categoryList.length,
+          itemCount: list.length,
         );
       },
     );
