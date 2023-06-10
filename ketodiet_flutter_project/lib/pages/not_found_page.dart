@@ -12,11 +12,11 @@ class NotFoundPage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Column(
+            const Column(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
                   '페이지를 찾을 수\n없습니다!',
                   style: TextStyle(color: Colors.green, fontSize: 48.0, fontWeight: FontWeight.bold),

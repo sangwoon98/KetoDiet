@@ -92,8 +92,8 @@ class PostWidget {
     double deviceSize = MediaQuery.of(context).size.width;
 
     if (communityPost.title == null) {
-      return Column(
-        children: const [
+      return const Column(
+        children: [
           SizedBox(height: 200.0),
           Text(
             '존재하지 않는 글입니다.',
@@ -1064,8 +1064,8 @@ class PostListWidget {
               ),
             ),
           ),
-          child: Row(
-            children: const [
+          child: const Row(
+            children: [
               Icon(Icons.list),
               SizedBox(width: 5.0),
               Text('전체글'),
@@ -1094,8 +1094,8 @@ class PostListWidget {
               ),
             ),
           ),
-          child: Row(
-            children: const [
+          child: const Row(
+            children: [
               Icon(Icons.recommend),
               SizedBox(width: 5.0),
               Text('개념글만'),
@@ -1350,16 +1350,16 @@ class PostListWidget {
     list.add(_headerRow(context));
 
     if (postList.list == null) {
-      list.add(Column(
-        children: const [
+      list.add(const Column(
+        children: [
           SizedBox(height: 30.0),
           Text('글이 존재하지 않습니다.'),
           SizedBox(height: 30.0),
         ],
       ));
     } else if (postList.list!.isEmpty) {
-      list.add(Column(
-        children: const [
+      list.add(const Column(
+        children: [
           SizedBox(height: 30.0),
           Text('글이 존재하지 않습니다.'),
           SizedBox(height: 30.0),
@@ -2271,15 +2271,6 @@ class ModifyCommunity {
     return Padding(
       padding: EdgeInsets.fromLTRB(left, top, right, bottom),
       child: child,
-    );
-  }
-
-  static Widget _closeButton(BuildContext context) {
-    return TextButton(
-      onPressed: () async {
-        Navigator.pop(context);
-      },
-      child: const Text('닫기'),
     );
   }
 

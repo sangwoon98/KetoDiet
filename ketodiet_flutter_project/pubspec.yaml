@@ -42,6 +42,9 @@ dependencies:
   url_strategy: ^0.2.0
   intl: ^0.17.0
   google_fonts: ^4.0.3
+  fl_chart: ^0.62.0
+  screenshot: ^2.0.0
+  fluttertoast: ^8.2.2
 
 dev_dependencies:
   flutter_test:
