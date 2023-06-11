@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:ketodiet_flutter_project/pages/not_found_page.dart';
 
 import '../pages/about_us_page.dart';
+import '../pages/admin_page.dart';
 import '../pages/challenge_page.dart';
 import '../pages/community_page.dart';
 import '../pages/info_page.dart';
@@ -50,6 +51,8 @@ class HandleRoute {
         return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => ChallengePage(query));
       case '/test':
         return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => TestPage(query));
+      case '/admin':
+        return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => AdminPage(query));
       default:
         settings = const RouteSettings(name: 'not-found');
         return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => const NotFoundPage());

@@ -22,7 +22,8 @@ class CustomScaffold {
 class CustomAppBar {
   static AppBar widget(BuildContext context, GlobalKey<ScaffoldState> scaffoldKey) {
     double deviceSize = MediaQuery.of(context).size.width;
-    if (deviceSize >= desktop || deviceSize >= laptop) {
+
+    if (deviceSize >= laptop) {
       return AppBar(
         automaticallyImplyLeading: false,
         toolbarHeight: AppBar().preferredSize.height,
@@ -33,7 +34,7 @@ class CustomAppBar {
             PageButton.page(context, '/about-us', '우리는 누구인가요?'),
             PageButton.page(context, '/community', '커뮤니티'),
             PageButton.page(context, '/challenge', '키토 챌린지'),
-            PageButton.page(context, '/test', '개발자 도구'),
+            PageButton.admin(context),
           ],
         ),
         actions: Actions.actions(context),
@@ -121,6 +122,48 @@ class PageButton {
       ),
     );
   }
+
+  static Widget admin(BuildContext context) {
+    return StreamBuilder(
+      stream: accountManager.isAdminStreamController.stream,
+      builder: (context, snapshot) {
+        if (snapshot.data != accountManager.accountArguments.isAdmin) {
+          accountManager.isAdminStreamController.add(accountManager.accountArguments.isAdmin);
+        }
+
+        if (snapshot.data == true) {
+          return Padding(
+            padding: const EdgeInsets.only(left: 10),
+            child: SizedBox(
+              height: AppBar().preferredSize.height,
+              child: TextButton(
+                onPressed: () {
+                  WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                    Navigator.pushNamedAndRemoveUntil(context, '/admin', (_) => false);
+                  });
+                },
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.fromLTRB(10.0, 0.0, 10.0, 0.0),
+                  child: Text(
+                    '관리자 페이지',
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        } else {
+          return const SizedBox();
+        }
+      },
+    );
+  }
 }
 
 class Actions {
@@ -200,6 +243,9 @@ class Actions {
         children: [
           _padding(_patchAccountButton(context), 10, 10, 10, 10),
           _padding(_deleteAccountButton(context), 10, 10, 10, 10),
+          accountManager.accountArguments.isAdmin == true
+              ? _padding(_adminButton(context), 10, 10, 10, 10)
+              : const SizedBox(),
           _padding(_closeButton(context), 10, 10, 10, 0),
         ],
       ),
@@ -252,12 +298,34 @@ class Actions {
     );
   }
 
+  static Widget _adminButton(BuildContext context) {
+    return Visibility(
+      visible: accountManager.accountArguments.isAdmin == true ? true : false,
+      child: ElevatedButton(
+        onPressed: () async {
+          WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+            Navigator.pushNamedAndRemoveUntil(context, '/admin', (_) => false);
+          });
+        },
+        style: ElevatedButton.styleFrom(
+          foregroundColor: Colors.white,
+          backgroundColor: Colors.black,
+          fixedSize: const Size(200.0, 50.0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+        ),
+        child: const Text('관리자 페이지로 이동'),
+      ),
+    );
+  }
+
   static Widget _closeButton(BuildContext context) {
     return TextButton(
       onPressed: () async {
         Navigator.pop(context);
       },
-      child: const Text('닫기'),
+      child: const Text('닫기', style: TextStyle(color: Colors.grey)),
     );
   }
 }
@@ -269,27 +337,39 @@ class CustomDrawer {
       '우리는 누구인가요?': '/about-us',
       '커뮤니티': '/community',
       '키토 챌린지': '/challenge',
-      '개발자 도구': '/test',
     };
 
-    List<String> pageList = pageMap.keys.toList();
+    return StreamBuilder(
+      stream: accountManager.isAdminStreamController.stream,
+      builder: (context, snapshot) {
+        if (snapshot.data != accountManager.accountArguments.isAdmin) {
+          accountManager.isAdminStreamController.add(accountManager.accountArguments.isAdmin);
+        }
 
-    return Drawer(
-      child: ListView.separated(
-        separatorBuilder: (context, index) => const Divider(height: 0.0, thickness: 2.0),
-        itemBuilder: (context, index) {
-          return ListTile(
-            title: Text(pageList[index], style: const TextStyle(fontSize: 24.0)),
-            contentPadding: const EdgeInsets.fromLTRB(15.0, 10.0, 0.0, 10.0),
-            onTap: () {
-              WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-                Navigator.pushNamedAndRemoveUntil(context, pageMap[pageList[index]]!, (_) => false);
-              });
+        if (accountManager.accountArguments.isAdmin == true) {
+          pageMap.addAll({'관리자 페이지': '/admin'});
+        }
+
+        List<String> pageList = pageMap.keys.toList();
+
+        return Drawer(
+          child: ListView.separated(
+            separatorBuilder: (context, index) => const Divider(height: 0.0, thickness: 2.0),
+            itemBuilder: (context, index) {
+              return ListTile(
+                title: Text(pageList[index], style: const TextStyle(fontSize: 24.0)),
+                contentPadding: const EdgeInsets.fromLTRB(15.0, 10.0, 0.0, 10.0),
+                onTap: () {
+                  WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                    Navigator.pushNamedAndRemoveUntil(context, pageMap[pageList[index]]!, (_) => false);
+                  });
+                },
+              );
             },
-          );
-        },
-        itemCount: pageList.length,
-      ),
+            itemCount: pageList.length,
+          ),
+        );
+      },
     );
   }
 }

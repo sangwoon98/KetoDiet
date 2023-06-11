@@ -45,6 +45,8 @@ dependencies:
   fl_chart: ^0.62.0
   screenshot: ^2.0.0
   fluttertoast: ^8.2.2
+  flutter_native_splash: ^2.3.1
+  animated_splash_screen: ^1.3.0
 
 dev_dependencies:
   flutter_test:
@@ -89,6 +91,14 @@ flutter:
     - family: GowunDodum
       fonts:
         - asset: assets/fonts/GowunDodum-Regular.ttf
+    - family: NanumGothic
+      fonts:
+        - asset: assets/fonts/NanumGothic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/NanumGothic-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/NanumGothic-ExtraBold.ttf
+          weight: 800
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages

@@ -7,7 +7,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:screenshot/screenshot.dart';
 
-import '../handles/handle_challenge.dart';
 import '../modules/handle.dart';
 import '../modules/layout.dart';
 
