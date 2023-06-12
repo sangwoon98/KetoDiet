@@ -217,13 +217,6 @@ class CommunityView(APIView):
                 'comment': comment_serializer,
                 'page': list_serializer
             }, status=status.HTTP_200_OK)
-            
-            # else:
-            #     return Response({'detail': 'Invalid post_num.'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            # except:
-            #     # 그 외의 예외 상황에 대한 처리
-            #     return Response({'detail': 'An error has occurred.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
     def post(self, request):
@@ -255,6 +248,7 @@ class CommunityView(APIView):
             data = {}
             for key in request.data.keys():
                 data[key] = request.data[key]
+            data['update_date']=timezone.now()
             serializer = CommunityDBSerializer(community, data=data, partial=True)
             if serializer.is_valid():
                 serializer.save()
@@ -374,6 +368,7 @@ class Community_comment(APIView):
                 data = {}
                 for key in request.data.keys(): # body의 데이터를 딕셔너리로
                     data[key] = request.data[key]
+                data['update_date']=timezone.now()
                 serializer = CommentDBSerializer(comment, data=data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
@@ -539,125 +534,3 @@ class Recommend(APIView):
                 return Response({'recommend': community.recommend},status=status.HTTP_404_NOT_FOUND)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
-
-
-
-# import importlib
-# from . import config
-
-# class Category(APIView):
-    
-#     def post(self, request):
-#         # id = AccountView.access_token_to_id
-#         id = 1
-#         try:
-#             isAdmin = UserDB.objects.get(id=id).isAdmin
-#             if isAdmin:
-#                 category = request.data.get('category')
-#                 if category not in config.CATEGORIES:
-#                     print(config.CATEGORIES)
-#                     config.CATEGORIES.append(category)
-#                     print(config.CATEGORIES)
-#                     new_config = importlib.import_module('.config', __package__)
-#                     setattr(new_config, 'CATEGORIES', config.CATEGORIES)
-#                 return Response({'success': True, 'categories': config.CATEGORIES})
-#             else:
-#                 return Response({'success': False, 'message': 'Unauthorized'})
-#         except UserDB.DoesNotExist:
-#             return Response({'success': False, 'message': 'User does not exist'})
-
-#     def delete(self, request):
-#         # id = AccountView.access_token_to_id
-#         id = 1
-#         try:
-#             isAdmin = UserDB.objects.get(id=id).isAdmin
-#             if isAdmin:
-#                 category = request.query_params.get('category')
-#                 if category in config.CATEGORIES:
-#                     config.CATEGORIES.remove(category)
-#                     new_config = importlib.import_module('.config', __package__)
-#                     setattr(new_config, 'CATEGORIES', config.CATEGORIES)
-#                 return Response({'success': True, 'categories': config.CATEGORIES})
-#             else:
-#                 return Response({'success': False, 'message': 'Unauthorized'})
-#         except UserDB.DoesNotExist:
-#             return Response({'success': False, 'message': 'User does not exist'})
-
-        
-    # def put(self, request, pk):
-    #     community = CommunityDB.objects.get(pk=pk)
-    #     data = self.body_get_multy_value(request, ['name', 'title', 'content'])
-    #     serializer = CommunityDBSerializer(community, data={'name': data[0], 'title': data[1], 'content': data[2]})
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return Response(serializer.data)
-    #     else:
-    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-#---------------------------------
-
-# class Community(APIView):
-    
-#     def get(self, request): #page를 받아야함. 쿼리셋으로 받을까? ㅇㅇ
-#         page=request.headers.get('page') # page= 1
-#         communityDB_datas= CommunityDB.objects.order_by('-num') # 역순으로 정렬
-#         pagenator=Paginator(communityDB_datas, 20) # 20개당 1 page로 정렬
-#         page_data=pagenator.get_page(page)
-#         return Response({'page_data': page_data},status= status.HTTP_200_OK)
-        
-#     def body_get_multy_value(self, request, key):
-#         len(key)
-#         name=request.body.get(key[0])
-#         title=request.body.get(key[1])
-#         content=request.body.get(key[2])
-#         data=[name,title,content]
-#         return data
-
-# class Community(APIView):
-    
-#     def body_get_multy_value(self, request, keys):
-#         return [request.data.get(key) for key in keys]
-
-#     def post(self, request):
-#         key=['name','title','content']
-#         data=self.body_get_multy_value(request, key)
-#         qs=CommunityDB
-#         qs.name=data[0]
-#         qs.title=data[1]
-#         qs.content=data[2]
-#         qs.save()
-#         return Response(status= status.HTTP_200_OK)
-    
-   
-    # request.headers.get('Authorization')
-    
-    # 
-
-
-
-    # def post(self, request):
-    #     keys = ['name', 'title', 'content']
-    #     data = self.body_get_multy_value(request, keys)
-    #     qs = CommunityDB(**dict(zip(keys, data)))
-    #     qs.save()
-    #     return Response(status=status.HTTP_200_OK)
-
-
-    
-    
-    # class Community(APIView):
-    
-    # def get_keys(self, data, keys):
-    #     return [data.get(key) for key in keys]
-        
-    # def post(self, request):
-    #     keys=['name','title','content']
-    #     values=self.get_keys(request.data, keys)
-    #     qs = CommunityDB.objects.create(
-    #         name=values[0],
-    #         title=values[1],
-    #         content=values[2]
-    #     )
-    #     return Response(status=status.HTTP_200_OK)
