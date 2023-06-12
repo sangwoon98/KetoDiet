@@ -18,7 +18,8 @@
         "8000",
         "--machine",
         "--web-renderer",
-        "html"
+        // "html",
+        "canvaskit"
       ]
     },
     {

@@ -26,6 +26,7 @@ class CommunityForum {
 
 class CommunityPost {
   int postNum;
+  dynamic uid;
   String? category, title, name, content;
   int? hit, recommend, commentCount;
   List<dynamic>? recommendList;
@@ -34,6 +35,7 @@ class CommunityPost {
 
   CommunityPost({
     required this.postNum,
+    this.uid,
     this.category,
     this.title,
     this.name,
@@ -56,6 +58,7 @@ class CommunityPost {
 
     return CommunityPost(
       postNum: query['post'],
+      uid: body['id'],
       category: body['category'],
       title: body['title'],
       name: body['name'],
@@ -142,12 +145,14 @@ class CommunityPostList {
 
 class CommunityComment {
   int commentNum;
+  dynamic uid;
   String name, content;
   DateTime createDate, updateDate;
 
   CommunityComment({
     required this.commentNum,
     required this.name,
+    required this.uid,
     required this.content,
     required this.createDate,
     required this.updateDate,
@@ -193,6 +198,7 @@ class CommunityCommentList {
     for (var element in body['results']) {
       communityCommentList.list!.add(CommunityComment(
         commentNum: element['comment_num'],
+        uid: element['id'],
         name: element['name'],
         content: element['content'],
         createDate: DateTime.parse(element['create_date']).toLocal(),
@@ -649,6 +655,52 @@ class HandleCommunity {
     }
   }
 
+  static Future<int?> getRecommendCutLine(BuildContext context) async {
+    http.Response response = await http.get(
+      Uri.http(backendDomain, '/api/settings'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      Map body = jsonDecode(utf8.decode(response.bodyBytes));
+
+      return body['cutline'];
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.getRecommendCutLine'));
+    }
+
+    return null;
+  }
+
+  static Future<bool> patchRecommendCutLine(BuildContext context, int cutLine) async {
+    http.Response response = await http.patch(
+      Uri.http(backendDomain, '/api/settings'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
+      },
+      body: jsonEncode(
+        {
+          'num': cutLine,
+        },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      errorManager.set(ErrorArgs('Response Status Code Error.\nStatusCode: ${response.statusCode}',
+          'handle_community.dart', 'HandleCommunity.getRecommendCutLine'));
+      return false;
+    }
+  }
+
   static Map<String, dynamic> _initQuery(Map<String, dynamic> query) {
     if (query.isEmpty) query = {'page': 1};
 
@@ -665,6 +717,7 @@ class HandleCommunity {
     if (query.containsKey('page')) {
       if (query['page'] is String) query['page'] = int.tryParse(query['page']);
       if (query['page'] is! int) return {};
+      if (query['page'] < 1) query['page'] = 1;
     }
 
     if (query.containsKey('category')) {

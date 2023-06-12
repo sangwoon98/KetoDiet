@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:ketodiet_flutter_project/pages/not_found_page.dart';
 
 import '../pages/about_us_page.dart';
+import '../pages/admin_page.dart';
 import '../pages/challenge_page.dart';
 import '../pages/community_page.dart';
 import '../pages/info_page.dart';
 import '../pages/main_page.dart';
 import '../pages/test_page.dart';
+
+String? currentPath;
 
 class HandleRoute {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -27,10 +30,11 @@ class HandleRoute {
       query['additional'] = settings.arguments;
     }
 
-    // TODO: Build시 삭제
     if (kDebugMode) {
       print('URI: $uri\nPATH: $path\nQUERY:$query\nSETTINGS:$settings');
     }
+
+    currentPath = settings.name;
 
     switch (path) {
       case '/':
@@ -47,6 +51,8 @@ class HandleRoute {
         return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => ChallengePage(query));
       case '/test':
         return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => TestPage(query));
+      case '/admin':
+        return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => AdminPage(query));
       default:
         settings = const RouteSettings(name: 'not-found');
         return PageRouteBuilder(settings: settings, pageBuilder: (_, __, ___) => const NotFoundPage());

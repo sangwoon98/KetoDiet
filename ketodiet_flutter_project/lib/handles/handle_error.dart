@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:ketodiet_flutter_project/modules/handle.dart';
 
 ErrorManager errorManager = ErrorManager();
 
@@ -46,7 +47,6 @@ class HandleError {
   }
 
   static Future<void> pushError(BuildContext context) async {
-    // TODO: Dialog 디자인
     return await showDialog(
       context: context,
       builder: (context) {
@@ -60,12 +60,23 @@ class HandleError {
           content: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(errorManager.get()?.error is String ? errorManager.get()!.error : 'null'),
               Text(errorManager.get()?.file is String ? errorManager.get()!.file : 'null'),
               Text(errorManager.get()?.method is String ? errorManager.get()!.method : 'null'),
             ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+                  Navigator.pushNamedAndRemoveUntil(context, currentPath is String ? currentPath! : '/', (_) => false);
+                });
+              },
+              child: const Text('CLOSE', style: TextStyle(color: Colors.red)),
+            ),
+          ],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.0),
           ),

@@ -28,6 +28,7 @@ class MyApp extends StatelessWidget {
       onGenerateRoute: (settings) => HandleRoute.onGenerateRoute(settings),
       title: 'KetoDiet',
       theme: ThemeData(
+        fontFamily: 'NanumGothic',
         primarySwatch: Colors.green,
       ),
       debugShowCheckedModeBanner: false,
