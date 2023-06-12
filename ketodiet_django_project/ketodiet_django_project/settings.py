@@ -25,6 +25,7 @@ SECRET_KEY = 'django-insecure-8x9+u(q3yk9^ca9k@p28cgpu(3(zg-a-#lmf2&@9o7mzgbl)io
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+# True => False 로 변경 05/02
 
 ALLOWED_HOSTS = ['*']
 
@@ -41,7 +42,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'user',
     'community',
-    'adminapp'
+    'adminapp',
+    'adminview',
+    'diet',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -129,7 +133,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
@@ -140,3 +144,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # 카테고리 목록
 
 FIXED_CATEGORIES = ['전체 글','공지','추천 글'] 
+
+# Celery Settings
+
+CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'   # RabbitMQ broker URL
+CELERY_RESULT_BACKEND = 'django-db'   # Celery 결과 저장을 Django 데이터베이스로 설정
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Seoul'
+
+# SMPT 설정
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'dbstkddns123456@gmail.com'  # Gmail 계정 이메일
+EMAIL_HOST_PASSWORD = 'xxjjiblbzgntqtvn'  # Gmail 계정 비밀번호
