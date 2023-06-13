@@ -23,10 +23,7 @@ urlpatterns = [
     path('api/settings', include('adminapp.urls')),
     path('api/account',include('user.urls')),
     path('api/community',include('community.urls')),
-<<<<<<< HEAD
     path('api/challenge',include('diet.urls')),
     path('api/admin',include('adminview.urls')),
-=======
-    path('api/emailsend',include('diet.urls')),
->>>>>>> parent of 8588bd29 (06/11_back)
+    # path('api/emailsend',include('diet.urls')),
 ]

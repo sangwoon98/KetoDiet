@@ -13,5 +13,8 @@
     "newcategory",
     "roboto",
     "runserver"
+  ],
+  "python.analysis.extraPaths": [
+    "./ketodiet_django_project/ketodiet_django_project"
   ]
 }
