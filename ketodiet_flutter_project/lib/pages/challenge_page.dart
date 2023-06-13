@@ -902,7 +902,16 @@ class FirstStepScreen {
                   });
                 }
               } else if (knowBodyFatController.text == 'false') {
-                if (firstFormKey.currentState!.validate() && secondNotKnowBodyFatFormKey.currentState!.validate()) {
+                int bodyFat = HandleChallenge.getBodyFat(
+                    genderController.text,
+                    double.parse(heightController.text),
+                    double.parse(neckController.text),
+                    double.parse(waistController.text),
+                    double.parse(hipController.text));
+                if (bodyFat < 0) {
+                  _dialog(context, '잘못된 입력값입니다.\n정상적인 값을 입력해주세요.');
+                } else if (firstFormKey.currentState!.validate() &&
+                    secondNotKnowBodyFatFormKey.currentState!.validate()) {
                   WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                     Navigator.pushNamedAndRemoveUntil(context, '/challenge', (_) => false, arguments: {
                       'screen': 'SecondStep',

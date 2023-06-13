@@ -92,9 +92,21 @@ class ChallengeArgs {
 class HandleChallenge {
   static int getBodyFat(String gender, double height, double neck, double waist, double hip) {
     if (gender == 'male') {
-      return (495 / (1.0324 - 0.19077 * _log10(waist - neck) + 0.15456 * _log10(height)) - 450).round();
+      double result = (495 / (1.0324 - 0.19077 * _log10(waist - neck) + 0.15456 * _log10(height)) - 450);
+
+      if (result.isNaN) {
+        return -1;
+      } else {
+        return result.round();
+      }
     } else {
-      return (495 / (1.29579 - 0.35004 * _log10(waist + hip - neck) + 0.22100 * _log10(height)) - 450).round();
+      double result = (495 / (1.29579 - 0.35004 * _log10(waist + hip - neck) + 0.22100 * _log10(height)) - 450);
+
+      if (result.isNaN) {
+        return -1;
+      } else {
+        return result.round();
+      }
     }
   }
 
