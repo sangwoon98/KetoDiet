@@ -23,13 +23,13 @@ def send_email_task(email_subject, message, sender_email, email, image_encoded):
 
     # 이메일 객체 생성
     
-    email_subject = 'KetoDiet에서 식단 계산 결과가 도착했습니다.'
+    email_subject = 'KetoDiet에서 적정섭취량 계산결과가 도착했습니다.'
     sender_email = 'dbstkddns123456@gamail.com'
     recipient_emails = [email]
 
     # HTML 형식 이메일 작성
     email = EmailMultiAlternatives(email_subject, message, sender_email, recipient_emails)
-    email.attach_alternative('<html><body><h2>'+message+'</h2><img src="'+image_encoded+'"style="width: 25vw; min-width: 140px;></body></html>', 'text/html')
+    email.attach_alternative('<html><body><h2>'+message+'</h2><img src="'+image_encoded+'"style="width: 50vw; min-width: 140px;></body></html>', 'text/html')
 
     # 이미지 첨부 (인라인)
     image_filename = 'image.jpg'  # 첨부할 이미지 파일 이름
