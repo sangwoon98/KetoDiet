@@ -182,7 +182,7 @@ class StartScreen {
     for (var element in dataList) {
       var height = element['height'].toString();
       var weight = element['weight'].toString();
-      DateTime dateTime = element['dateTime'];
+      DateTime dateTime = DateTime.parse(element['dateTime']);
 
       Map data = {'screen': 'Result'};
       data.addAll(element);

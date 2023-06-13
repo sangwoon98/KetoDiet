@@ -31,6 +31,7 @@ class UserList {
   static Future<UserList> init({required int page, String? keyword}) async {
     UserList userList = UserList(pageNum: page, keyword: keyword);
     Map body = await HandleAdmin.getUserList(page: page, keyword: keyword);
+    print(body);
 
     if (body.isEmpty || body.containsKey('detail')) return userList;
     int count = body['count'];
@@ -44,7 +45,7 @@ class UserList {
 
     for (var element in body['results']) {
       userList.list!.add(UserInfo(
-        uid: element['uid'],
+        uid: element['id'],
         name: element['name'],
         isAdmin: element['isAdmin'],
       ));
@@ -55,7 +56,7 @@ class UserList {
 
 class HandleAdmin {
   static Future<Map> getUserList({required int page, String? keyword}) async {
-    Map<String, dynamic> query = {'page': page};
+    Map<String, dynamic> query = {'page': page.toString()};
 
     if (keyword != null) query.addAll({'keyword': keyword});
 
@@ -67,9 +68,8 @@ class HandleAdmin {
         'Authorization': '${accountManager.get().oAuthToken!.toJson()}',
       },
     );
-
     if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes));
+      return jsonDecode(utf8.decode(response.bodyBytes))['page'];
     } else {
       return {};
     }
