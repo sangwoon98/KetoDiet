@@ -1410,7 +1410,7 @@ class ResultScreen {
       cycleController.text = query['activity']['cycle'].toString();
     }
 
-    if (query.containsKey('change')) goalController.text = query['change'].toString();
+    if (query['change'] != null) goalController.text = query['change'].toString();
 
     if (deviceSize >= tablet) {
       return Column(
