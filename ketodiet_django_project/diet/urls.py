@@ -2,5 +2,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.EmailSend.as_view()), # as_view() = 클래스 기반 뷰를 함수로 변환, HTTP 메소드 (GET, POST, PUT, DELETE 등)를 처리하고, 적절한 메소드를 호출
+    path('/email', views.EmailSend.as_view()), # as_view() = 클래스 기반 뷰를 함수로 변환, HTTP 메소드 (GET, POST, PUT, DELETE 등)를 처리하고, 적절한 메소드를 호출
+    path('', views.ChallengeAPIView.as_view()),
 ]
