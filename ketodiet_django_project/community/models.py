@@ -3,7 +3,7 @@ from django.utils import timezone
 
 class CommunityDB(models.Model):
     post_num=models.AutoField(primary_key=True)
-    id = models.IntegerField()
+    id = models.BigIntegerField()
     name=models.CharField(max_length=12)
     category=models.CharField(max_length=10)
     title=models.CharField(max_length=30)
@@ -36,7 +36,7 @@ class CommunityDB(models.Model):
 class CommunitycommentDB(models.Model):
     comment_num=models.AutoField(primary_key=True)
     post_num=models.IntegerField()
-    id = models.IntegerField()
+    id = models.BigIntegerField()
     name=models.CharField(max_length=12)
     content = models.TextField()
     create_date= models.DateTimeField(default=timezone.now)

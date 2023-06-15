@@ -106,7 +106,7 @@ DATABASES = {
         'USER':'admin',
         'PASSWORD':'24532453',
         'PORT':'3306',
-        'OPTIONS':{'charset':'utf8mb4'},
+        'OPTIONS':{'charset':'utf8'},
     }
 }
 
@@ -152,11 +152,6 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-
-# 카테고리 목록
-
-FIXED_CATEGORIES = ['전체 글','공지','추천 글'] 
 
 # Celery Settings
 

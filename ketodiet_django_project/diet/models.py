@@ -3,7 +3,7 @@ from django.utils import timezone
 
 class ChallengeDB(models.Model):
     
-    userid = models.IntegerField()
+    userid = models.BigIntegerField()
     gender = models.CharField(max_length=10)
     height = models.FloatField()
     weight = models.FloatField()
