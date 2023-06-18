@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework import generics, pagination,status,serializers
 from user.models import UserDB
 from community.views import get_http_request_to_request

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -21,10 +22,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-8x9+u(q3yk9^ca9k@p28cgpu(3(zg-a-#lmf2&@9o7mzgbl)io'
+SECRET_KEY = os.environ.get('MY_DJANGO_SECRET_KEY', 'default_my_django_secret_key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 # True => False 로 변경 05/02
 
 ALLOWED_HOSTS = ['*']
@@ -101,10 +102,10 @@ WSGI_APPLICATION = 'ketodiet_django_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'HOST':'db-ketodiet.cluster-ckhdgevhh7ab.ap-northeast-2.rds.amazonaws.com',
-        'NAME': 'ketodiet_devops',
-        'USER':'admin',
-        'PASSWORD':'24532453',
+        'HOST':os.environ.get('MYSQL_HOST', 'localhost'),
+        'NAME':'ketodiet_devops',
+        'USER': os.environ.get('MYSQL_USER_NAME', 'default_user'),
+        'PASSWORD':os.environ.get('MYSQL_PASSWORD', 'default_password'),
         'PORT':'3306',
         'OPTIONS':{'charset':'utf8'},
     }
@@ -168,7 +169,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'dbstkddns123456@gmail.com'  # Gmail 계정 이메일
-EMAIL_HOST_PASSWORD = 'xxjjiblbzgntqtvn'  # Gmail 계정 비밀번호
+EMAIL_HOST_PASSWORD = os.environ.get('MY_EMAIL_HOST_PASSWORD','default_my_email_host_password')  # Gmail 계정 비밀번호
 
 LOGGING = {
     'version': 1,

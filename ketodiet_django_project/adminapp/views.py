@@ -5,15 +5,6 @@ from user.models import UserDB
 from rest_framework import status
 from user.views import AccountView
 
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from .models import AdminSettingsDB
-from user.models import UserDB
-from rest_framework import status
-from user.views import AccountView
-
-
 class Settings(APIView):
     
     def get(self, request):

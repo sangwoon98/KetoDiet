@@ -7,10 +7,6 @@ from celery import shared_task
 
 @shared_task
 def send_email_task(email_subject, message, sender_email, email, image_encoded):
-    # split_data = image_encoded.split(",")
-    # image_encoded = split_data[1]
-    # image_type = split_data[0]
-    # image_type = split_data[0]
 
     # base64 디코딩
     image_data = base64.b64decode(image_encoded)
@@ -22,7 +18,6 @@ def send_email_task(email_subject, message, sender_email, email, image_encoded):
     image = Image.open(BytesIO(image_data)).convert('RGB')
 
     # 이메일 객체 생성
-    
     email_subject = 'KetoDiet에서 적정섭취량 계산결과가 도착했습니다.'
     sender_email = 'dbstkddns123456@gamail.com'
     recipient_emails = [email]
@@ -41,8 +36,3 @@ def send_email_task(email_subject, message, sender_email, email, image_encoded):
 
     # 임시 이미지 파일 삭제
     os.remove(image_filename)
-
-
-# @shared_task
-# def send_email_task(subject, message, from_email, recipient_list):
-#     send_mail(subject, message, from_email, recipient_list)

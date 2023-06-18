@@ -1,28 +1,19 @@
 from http.client import BAD_REQUEST
 from django.utils import timezone
-from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework import status
-from django.core.paginator import Paginator
 from django.http import HttpRequest
-#---------------------------------
 from rest_framework import generics, pagination
-
 from user.models import UserDB
 from adminapp.models import AdminSettingsDB
-
 from .serializers import CommunityDBSerializer
 from .models import CommunityDB, CommunitycommentDB, CategoryDB
 from rest_framework import serializers
 from user.views import AccountView
-
-#-----
-# from django.conf import settings
 from rest_framework.response import Response
-from rest_framework.views import APIView
-
 from django.db.models import Q
 import json, math, urllib.parse
+#---------------------------------
 
 # DB 모델 인스턴스나 QuerySet 데이터를 JSON으로 반환 , 출력값: fields로 고정, data={'name':name}형태로 삽입후 직렬화 가능,
 class CommunityDBSerializer(serializers.ModelSerializer): 
@@ -40,7 +31,6 @@ class CommunityDBSerializerNoContent(serializers.ModelSerializer):
     class Meta:
         model = CommunityDB
         fields = 'post_num','category','title','name','create_date','update_date','hit','recommend','comment_count','isRecommend','id' # 모든값들을 직렬화 시킴
-        
 
 class CommunityListPagination(pagination.PageNumberPagination): # DRF에서 제공하는 pagination을 상속
     page_size = 30
@@ -54,37 +44,27 @@ class CommunityList(generics.ListAPIView):
         target = self.request.query_params.get('target')
         keyword = self.request.query_params.get('keyword')
         isRecommend = self.request.query_params.get('isRecommend')
-        # recommend = self.request.query_params.get('recommend')
         
         category = urllib.parse.unquote(category) if category else None
         target = urllib.parse.unquote(target) if target else None
         keyword = urllib.parse.unquote(keyword) if keyword else None
-        
         queryset = CommunityDB.objects.all().order_by('-post_num')
         comment_queryset = CommunitycommentDB.objects.all().order_by('-post_num')
         
         if category:
             queryset = CommunityDB.objects.all().order_by('-post_num').filter(category=category)
-
         if isRecommend:
             queryset = CommunityDB.objects.all().order_by('-post_num').filter(isRecommend=True)
-            
-        # if recommend and category:
-        #     queryset = CommunityDB.objects.all().order_by('-post_num').filter(category=category).filter(isRecommend=True)
-            
         if isRecommend and category:
             queryset = CommunityDB.objects.all().order_by('-post_num').filter(category=category).filter(isRecommend=True)
-        
-        if target and keyword:
-            
+        if target and keyword:   
             if target == 'all':
                 # 게시글 검색
                 search_queryset = queryset.filter(Q(title__contains=keyword) | Q(name__contains=keyword) | Q(content__contains=keyword)).distinct()
                 # 댓글 검색
                 comment_queryset_search = comment_queryset.filter(content__contains=keyword).values_list('post_num', flat=True).distinct()
                 # 게시글과 댓글 합치기
-                queryset = search_queryset | queryset.filter(post_num__in=comment_queryset_search).distinct()
-                
+                queryset = search_queryset | queryset.filter(post_num__in=comment_queryset_search).distinct()    
             elif target == 'title':
                 queryset = queryset.filter(title__contains=keyword)
             elif target == 'name':
@@ -95,8 +75,7 @@ class CommunityList(generics.ListAPIView):
                 comment_queryset = comment_queryset.filter(content__contains=keyword).values_list('post_num', flat=True).distinct()
                 queryset = queryset.filter(post_num__in=comment_queryset).distinct()
         return queryset
-
-
+    
 #___________________________전역 함수____________________________
 
 def get_post_num_order(post_num, all_list, division_number):
@@ -124,8 +103,6 @@ def get_http_request_to_request(request):
 
 #___________________________전역 함수 끝____________________________
 
-
-
 class CommunityView(APIView):
     def body_get_multy_value(self, request, keys):
         return [request.data.get(key) for key in keys]
@@ -146,9 +123,8 @@ class CommunityView(APIView):
         else:
             # post_num 파라미터가 있는 경우에 대한 처리
             post_num = request.query_params.get('post_num')
-            
-             #__________________________________글_____________________________________________________
-                # 글, 목록, 댓글 가져오기
+            #__________________________________글_____________________________________________________
+            # 글, 목록, 댓글 가져오기
             try: 
                 qs = CommunityDB.objects.get(post_num=post_num)
                 qs.hit += 1
@@ -164,13 +140,11 @@ class CommunityView(APIView):
             if category:
                 all_list=all_list.filter(category=category)
             if isRecommend:
-                all_list=all_list.filter(isRecommend=True)
-                
+                all_list=all_list.filter(isRecommend=True)     
             if qs:
                 page_number = get_post_num_order(post_num, all_list, 30)
             else:
                 page_number = 1
-            
             if page_number is None:
                 list_serializer = []  # 목록에 없을때, 이게 필요한가..?
             else:
@@ -189,7 +163,6 @@ class CommunityView(APIView):
         
             if qs:
                 all_list = CommunitycommentDB.objects.filter(post_num=post_num)
-            
                 comment_page = math.ceil(len(all_list)/20)
                 if comment_page==0:
                     comment_serializer={
@@ -218,7 +191,6 @@ class CommunityView(APIView):
                 'page': list_serializer
             }, status=status.HTTP_200_OK)
 
-
     def post(self, request):
         id = AccountView.access_token_to_id(self, request)
         try:
@@ -234,7 +206,6 @@ class CommunityView(APIView):
             return Response({'post_num':serializer.instance.post_num},status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) # 입력값 오류
-
 
     def patch(self, request):
         try:
@@ -266,7 +237,6 @@ class CommunityView(APIView):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(status= status.HTTP_403_FORBIDDEN) # 권한 없음
-
 
     def delete(self, request):
         id = AccountView.access_token_to_id(self, request)
@@ -311,8 +281,6 @@ class Comment_notall_DBSerializer(serializers.ModelSerializer):
 class CommentListPagination(pagination.PageNumberPagination): # DRF에서 제공하는 pagination을 상속
     page_size = 20
         
-
-
 class CommunityCommentList(generics.ListAPIView):
     serializer_class = Comment_notall_DBSerializer
     pagination_class = CommentListPagination
@@ -321,8 +289,6 @@ class CommunityCommentList(generics.ListAPIView):
         post_num = self.request.GET.get('post_num')
         queryset = CommunitycommentDB.objects.filter(post_num=post_num).order_by('comment_num')
         return queryset
-
-            
             
 class Community_comment(APIView):
     
@@ -513,8 +479,7 @@ class Recommend(APIView):
                 val=len(community.recommend)
                 if  val >= cutline:
                     community.isRecommend = True
-                community.save()
-                    
+                community.save()       
             return Response({'recommend': community.recommend}, status=status.HTTP_201_CREATED)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)

@@ -1,18 +1,11 @@
-from user.models import UserDB
-from community.models import CommunityDB, CommunitycommentDB
-from rest_framework.response import Response
-# from rest_framework.decorators import api_view
-from rest_framework import status
-import requests
-import base64
 import json
-#____________________________________ 
-# from rest_framework.views import APIView.
-#_______________________________________
-
+import requests
+from user.models import UserDB
+from rest_framework import status
 from rest_framework.views import APIView
-from .models import UserDB
-
+from rest_framework.response import Response
+from community.models import CommunityDB, CommunitycommentDB
+#_______________________________________
 
 class AccountView(APIView):
         
@@ -42,14 +35,11 @@ class AccountView(APIView):
         try:
             body_json = json.loads(request.body)
             value = body_json.get(key)
-        
         except json.JSONDecodeError as e:
             # JSON 디코딩에 문제가 있는 경우 400 Bad Request 상태 코드와 함께 에러 메시지를 응답으로 반환
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return value
             
-            
-        
     def get(self, request):
         id = self.access_token_to_id(request) # 유효성 검증 후 access_token의 id 를 가져옴.
         qs = UserDB.objects.filter(id=id).first() # first method 사용시 요청이 존재하지 않으면 NONE으로 처리
@@ -59,7 +49,6 @@ class AccountView(APIView):
             return Response({'name': name, 'isAdmin':isAdmin},status = status.HTTP_200_OK)
         else:
             return Response({'message': 'signup'}, status = status.HTTP_404_NOT_FOUND)
-        
         
     def post(self, request):
         id = self.access_token_to_id(request) # 유효성 검증 후 access_token의 id 를 가져옴.
@@ -73,7 +62,6 @@ class AccountView(APIView):
             return Response(status = status.HTTP_400_BAD_REQUEST) # 생성에 실패 했을때
         
         return Response(status = status.HTTP_201_CREATED) #정상적으로 생성
-    
     
     def patch(self, request):
         id = self.access_token_to_id(request)
@@ -89,8 +77,7 @@ class AccountView(APIView):
             CommunityDB.objects.filter(name = nowname).update(name = newname) # 현재 이름 으로 작성된 커뮤니티 전부 변경
             CommunitycommentDB.objects.filter(name = nowname).update(name = newname) # 현재 이름 으로 작성된 댓글 전부 변경
             return Response(status=status.HTTP_200_OK)
-            
-            
+                  
     def delete(self, request):
         id = self.access_token_to_id(request) # 유효성 검증 후 access_token의 id 를 가져옴.
         try:

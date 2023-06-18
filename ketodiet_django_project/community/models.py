@@ -14,21 +14,7 @@ class CommunityDB(models.Model):
     create_date = models.DateTimeField(default=timezone.now)
     update_date = models.DateTimeField(default=timezone.now)
     isRecommend= models.BooleanField(default=False)
-    
-    # def save(self, *args, **kwargs):
-    #     if not self.post_num:
-    #         self.create_date = timezone.now()
-    #     self.update_date = self.create_date
-    #     super().save(*args, **kwargs)
-    
-    # def save(self, *args, **kwargs):
-    #     if not self.post_num:
-    #         self.create_date = timezone.now()
-    #         self.update_date = self.create_date
-    #     else:
-    #         self.update_date = timezone.now()  # 생성이 아닌 경우에는 수정 날짜를 업데이트합니다.
-    #     super().save(*args, **kwargs)
-    
+
     def __str__(self):
         return self.title
     

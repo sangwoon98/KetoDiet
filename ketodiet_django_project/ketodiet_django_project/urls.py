@@ -15,8 +15,6 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-# from . import views
-
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,5 +23,4 @@ urlpatterns = [
     path('api/community',include('community.urls')),
     path('api/challenge',include('diet.urls')),
     path('api/admin',include('adminview.urls')),
-    # path('api/emailsend',include('diet.urls')),
 ]
