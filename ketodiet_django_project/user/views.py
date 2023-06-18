@@ -7,7 +7,7 @@ import requests
 import base64
 import json
 #____________________________________ 
-# from rest_framework.views import APIView
+# from rest_framework.views import APIView.
 #_______________________________________
 
 from rest_framework.views import APIView
@@ -46,7 +46,6 @@ class AccountView(APIView):
         except json.JSONDecodeError as e:
             # JSON 디코딩에 문제가 있는 경우 400 Bad Request 상태 코드와 함께 에러 메시지를 응답으로 반환
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
         return value
             
             
