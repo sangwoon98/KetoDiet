@@ -2,10 +2,9 @@ import json
 from rest_framework.views import APIView
 from .tasks import send_email_task
 from django.http import HttpResponse
-from rest_framework import status
+from rest_framework import status, serializers
 from .models import ChallengeDB
 from rest_framework.response import Response
-from rest_framework import serializers
 from user.views import AccountView
 
 class EmailSend(APIView):

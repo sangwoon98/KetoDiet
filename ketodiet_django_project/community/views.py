@@ -1,14 +1,12 @@
 from http.client import BAD_REQUEST
 from django.utils import timezone
 from rest_framework.views import APIView
-from rest_framework import status
 from django.http import HttpRequest
-from rest_framework import generics, pagination
+from rest_framework import generics, pagination, status, serializers
 from user.models import UserDB
 from adminapp.models import AdminSettingsDB
 from .serializers import CommunityDBSerializer
 from .models import CommunityDB, CommunitycommentDB, CategoryDB
-from rest_framework import serializers
 from user.views import AccountView
 from rest_framework.response import Response
 from django.db.models import Q
